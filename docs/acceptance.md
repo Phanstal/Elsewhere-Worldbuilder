@@ -21,9 +21,9 @@
 - `cargo test --manifest-path src-tauri/Cargo.toml`：1 个测试通过
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`：通过
 - Windows release 构建通过；通过 WebView2 CDP 驱动真实 Tauri 窗口完成新建世界、创建节点、改名、自动保存，并直接查询 `elsewhere.db` 验证 SQLite 数据
-- GitHub Actions CI：待首次 push 后填写
-- GitHub Actions macOS Release：待首次 push 后填写
-- 产物复核：待 macOS 构建完成后填写（bundle id、最低系统版本、双架构、SHA-256）
+- GitHub Actions CI（commit `5c4ed9f`，run `40467678611`）：前端 lint / format / typecheck / 16 个单测 / build / 10 个 E2E，Rust fmt / clippy / test 全部通过
+- GitHub Actions macOS Release（tag `v0.1.0`，run `40468190942`）：universal `.app` 编译、ad-hoc 签名、DMG / ZIP / checksum 打包与 Release 发布全部通过
+- 产物复核：`CFBundleIdentifier=com.phanstal.elsewhere`、`LSMinimumSystemVersion=12.0`、`CFBundleShortVersionString=0.1.0`；Mach-O fat binary 含 `x86_64` 与 `arm64`；DMG 10,313,605 bytes，SHA-256 `20901505be7e45e46a4ac3e3d8f6f85bd03ffabb1e620ba11deaf56434cc6347`；ZIP 9,298,580 bytes，SHA-256 `8003e16aeadac045ee3004f222f7ad8b48c96c1338ead7bc28557bd61999fa9a`；与 `SHA256SUMS.txt` 一致
 
 > Playwright 验证的是浏览器 localStorage 适配器；SQLite、原生菜单、窗口和 DMG 仍需按下面的真机步骤验收。
 
