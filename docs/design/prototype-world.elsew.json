@@ -1,0 +1,38 @@
+{
+  "format": "elsew",
+  "version": 1,
+  "id": "c40120fc-7991-4062-b885-63b5913cc433",
+  "name": "Untitled World",
+  "updatedAt": "2026-10-27T06:18:37.041Z",
+  "nodes": [
+    {
+      "id": 1793081363425,
+      "title": "The Hollow Reach",
+      "type": "Character",
+      "x": 555.5555555555555,
+      "y": 467.77777777777777,
+      "description": "A quiet frontier at the edge of the known map.",
+      "width": 560,
+      "height": 360
+    },
+    {
+      "id": 1793081870084,
+      "title": "The Hollow Reach",
+      "type": "Character",
+      "x": 685.5555555555555,
+      "y": 547.7777777777778,
+      "description": "A quiet frontier at the edge of the known map.",
+      "width": 560,
+      "height": 360,
+      "sourceId": 1793081363425
+    }
+  ],
+  "relations": [
+    {
+      "id": 1793081916153,
+      "from": 1793081870084,
+      "to": 1793081363425,
+      "name": "Relation"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "format": "elsew",
+  "version": 1,
+  "id": "22222222-2222-4222-8222-222222222222",
+  "name": "Imported Reach",
+  "updatedAt": "2026-02-03T04:05:06.000Z",
+  "nodes": [
+    {
+      "id": 1001,
+      "title": "The Hollow Reach",
+      "type": "Character",
+      "x": 520,
+      "y": 330,
+      "description": "A quiet frontier at the edge of the known map."
+    },
+    {
+      "id": 1002,
+      "title": "The Ashen Court",
+      "type": "Faction",
+      "x": 760,
+      "y": 330,
+      "description": "Keepers of the old roads."
+    }
+  ],
+  "relations": []
+}

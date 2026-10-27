@@ -1,0 +1,123 @@
+name: macOS Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: macos-release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Universal macOS build
+    runs-on: macos-15
+    env:
+      MACOSX_DEPLOYMENT_TARGET: '12.0'
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          key: universal
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm test
+
+      - name: Build universal app
+        run: npx tauri build --target universal-apple-darwin --bundles app
+
+      - name: Ad-hoc sign the app
+        run: |
+          APP="src-tauri/target/universal-apple-darwin/release/bundle/macos/Elsewhere.app"
+          test -d "$APP"
+          xattr -cr "$APP"
+          codesign --force --deep --sign - "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+
+      - name: Verify bundle metadata and architectures
+        run: |
+          set -euo pipefail
+          APP="src-tauri/target/universal-apple-darwin/release/bundle/macos/Elsewhere.app"
+          BINARY="$APP/Contents/MacOS/Elsewhere"
+          test -x "$BINARY"
+          lipo -info "$BINARY"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$APP/Contents/Info.plist"
+          lipo -info "$BINARY" | grep -q arm64
+          lipo -info "$BINARY" | grep -q x86_64
+
+      - name: Package DMG, ZIP, and checksums
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./src-tauri/tauri.conf.json').version")"
+          APP="src-tauri/target/universal-apple-darwin/release/bundle/macos/Elsewhere.app"
+          mkdir -p release/dmg
+
+          cp -R "$APP" release/dmg/
+          ln -s /Applications release/dmg/Applications
+          hdiutil create \
+            -volname "Elsewhere" \
+            -srcfolder release/dmg \
+            -ov -format UDZO \
+            "release/Elsewhere_${VERSION}_universal.dmg"
+
+          ditto -c -k --sequesterRsrc --keepParent \
+            "$APP" "release/Elsewhere_${VERSION}_universal.zip"
+
+          rm -rf release/dmg
+          cd release
+          shasum -a 256 Elsewhere_${VERSION}_universal.dmg > Elsewhere_${VERSION}_universal.dmg.sha256
+          shasum -a 256 Elsewhere_${VERSION}_universal.zip > Elsewhere_${VERSION}_universal.zip.sha256
+          shasum -a 256 Elsewhere_${VERSION}_universal.dmg Elsewhere_${VERSION}_universal.zip > SHA256SUMS.txt
+          ls -la
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Elsewhere-macos-universal
+          path: release/*
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          NOTES="docs/release-notes/${GITHUB_REF_NAME}.md"
+          if [ -f "$NOTES" ]; then
+            gh release create "$GITHUB_REF_NAME" \
+              release/Elsewhere_*.dmg \
+              release/Elsewhere_*.zip \
+              release/Elsewhere_*.sha256 \
+              release/SHA256SUMS.txt \
+              --title "Elsewhere $GITHUB_REF_NAME" \
+              --notes-file "$NOTES"
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              release/Elsewhere_*.dmg \
+              release/Elsewhere_*.zip \
+              release/Elsewhere_*.sha256 \
+              release/SHA256SUMS.txt \
+              --title "Elsewhere $GITHUB_REF_NAME" \
+              --generate-notes
+          fi

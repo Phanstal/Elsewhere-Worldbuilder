@@ -1,0 +1,119 @@
+{
+  "format": "elsew",
+  "version": 1,
+  "id": "935a7882-479d-45e6-9d38-dc4c551d790b",
+  "name": "The Hollow Reach",
+  "updatedAt": "2026-10-27T07:02:16.109Z",
+  "nodes": [
+    {
+      "id": 101,
+      "title": "The Hollow Reach",
+      "type": "Place",
+      "x": 550,
+      "y": 350,
+      "width": 780,
+      "height": 500,
+      "description": "A sheltered valley at the edge of the known roads, where the old maps stop and the weather begins."
+    },
+    {
+      "id": 102,
+      "title": "Wayfarer's Rest",
+      "type": "Building",
+      "x": 320,
+      "y": 250,
+      "description": "A low stone inn built around a chimney that never quite goes out."
+    },
+    {
+      "id": 103,
+      "title": "Known Roads",
+      "type": "Map",
+      "x": 780,
+      "y": 250,
+      "description": "The surveyed routes out of the valley, inked in a careful hand."
+    },
+    {
+      "id": 104,
+      "title": "Mira Vale",
+      "type": "Character",
+      "x": 320,
+      "y": 470,
+      "description": "A cartographer who charts the roads nobody else will walk."
+    },
+    {
+      "id": 105,
+      "title": "Ashen Court",
+      "type": "Faction",
+      "x": 780,
+      "y": 470,
+      "description": "Keepers of the old crossings. They remember every road that was closed."
+    },
+    {
+      "id": 106,
+      "title": "The Long Silence",
+      "type": "Event",
+      "x": 550,
+      "y": 550,
+      "description": "The winter the roads emptied and the valley stopped hearing from the coast."
+    },
+    {
+      "id": 107,
+      "title": "Wayfare",
+      "type": "Concept",
+      "x": 1000,
+      "y": 150,
+      "description": "The valley's belief that a road is a promise, not a line."
+    },
+    {
+      "id": 108,
+      "title": "The Age of Roads",
+      "type": "Timeline",
+      "x": 1000,
+      "y": 470,
+      "description": "Three centuries of survey, closure, and quiet repair."
+    }
+  ],
+  "relations": [
+    {
+      "id": 201,
+      "from": 104,
+      "to": 105,
+      "name": "Sworn to"
+    },
+    {
+      "id": 202,
+      "from": 104,
+      "to": 102,
+      "name": "Sheltered at"
+    },
+    {
+      "id": 203,
+      "from": 105,
+      "to": 101,
+      "name": "Holds"
+    },
+    {
+      "id": 204,
+      "from": 103,
+      "to": 101,
+      "name": "Charts"
+    },
+    {
+      "id": 205,
+      "from": 106,
+      "to": 104,
+      "name": "Displaced"
+    },
+    {
+      "id": 206,
+      "from": 107,
+      "to": 103,
+      "name": "Guides"
+    },
+    {
+      "id": 207,
+      "from": 108,
+      "to": 103,
+      "name": "Predates"
+    }
+  ]
+}
