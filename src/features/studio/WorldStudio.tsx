@@ -293,8 +293,17 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
       }
       if (command && event.key.toLowerCase() === 'z') {
         event.preventDefault();
-        if (event.shiftKey) editor.redo();
-        else editor.undo();
+        const active = document.activeElement;
+        const editingValue =
+          active instanceof HTMLElement &&
+          (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+        if (editingValue) {
+          document.execCommand(event.shiftKey ? 'redo' : 'undo');
+        } else if (event.shiftKey) {
+          editor.redo();
+        } else {
+          editor.undo();
+        }
         return;
       }
 
@@ -357,8 +366,19 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
       }
       if (command === 'export-elsew') void saveElsew();
       if (command === 'export-png') void savePng();
-      if (command === 'undo') editor.undo();
-      if (command === 'redo') editor.redo();
+      if (command === 'undo' || command === 'redo') {
+        const active = document.activeElement;
+        const editingValue =
+          active instanceof HTMLElement &&
+          (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+        if (editingValue) {
+          document.execCommand(command);
+        } else if (command === 'undo') {
+          editor.undo();
+        } else {
+          editor.redo();
+        }
+      }
       if (command === 'zoom-in') zoomBy(1.2);
       if (command === 'zoom-out') zoomBy(1 / 1.2);
       if (command === 'fit') fitCanvas();

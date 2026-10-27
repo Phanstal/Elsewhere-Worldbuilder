@@ -221,6 +221,22 @@ test('resizes a place and undoes the resize', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Undo' }).click();
   await expect(note).toContainText('560 × 360');
+
+  const secondHandle = await page.locator('.resize-handle').boundingBox();
+  await page.mouse.move(
+    secondHandle!.x + secondHandle!.width / 2,
+    secondHandle!.y + secondHandle!.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    secondHandle!.x + secondHandle!.width / 2 + 45,
+    secondHandle!.y + secondHandle!.height / 2 + 27,
+    { steps: 8 },
+  );
+  await page.mouse.up();
+  await expect(note).not.toContainText('560 × 360');
+  await page.keyboard.press('Control+z');
+  await expect(note).toContainText('560 × 360');
 });
 
 test('deletes a world from the archive', async ({ page }) => {

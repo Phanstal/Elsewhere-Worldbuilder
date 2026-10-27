@@ -37,8 +37,8 @@ pub fn install<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         ],
     )?;
 
-    let undo = PredefinedMenuItem::undo(app, Some("Undo"))?;
-    let redo = PredefinedMenuItem::redo(app, Some("Redo"))?;
+    let undo = MenuItem::with_id(app, "undo", "Undo", true, Some("CmdOrCtrl+Z"))?;
+    let redo = MenuItem::with_id(app, "redo", "Redo", true, Some("CmdOrCtrl+Shift+Z"))?;
     let cut = PredefinedMenuItem::cut(app, Some("Cut"))?;
     let copy = PredefinedMenuItem::copy(app, Some("Copy"))?;
     let paste = PredefinedMenuItem::paste(app, Some("Paste"))?;
@@ -132,6 +132,8 @@ pub fn install<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     app.on_menu_event(|app, event| {
         let command = match event.id().as_ref() {
             "new-world" => Some("new-world"),
+            "undo" => Some("undo"),
+            "redo" => Some("redo"),
             "save" => Some("save"),
             "export-elsew" => Some("export-elsew"),
             "export-png" => Some("export-png"),
