@@ -21,8 +21,9 @@
 - `cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check`：通过
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`：通过
 - `cargo test --manifest-path src-tauri/Cargo.toml`：通过
-- GitHub Actions CI（commit `6c367b1`，run [`41303737790`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/41303737790)）：前端 lint / format / typecheck / 23 个单测 / build / 11 个 E2E，Rust fmt / clippy / test 全部通过
-- GitHub Actions macOS Release：待 tag 推送后记录 run id 与产物校验值
+- GitHub Actions CI（commit `a4680b2`，run [`41303898155`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/41303898155)）：前端 lint / format / typecheck / 23 个单测 / build / 11 个 E2E，Rust fmt / clippy / test 全部通过
+- GitHub Actions macOS Release（tag `v0.1.2`，run [`41304028132`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/41304028132)）：universal `.app` 构建、ad-hoc 签名、双架构校验、DMG / ZIP / checksum 打包、Release 发布全部通过
+- 已下载并校验发布产物：DMG 10,322,603 bytes，SHA-256 `3b071ff84d619fe12f913659cf0800cb5eb076a16838a81eb07895bd133e1fc8`；ZIP 9,312,644 bytes，SHA-256 `1eb323d0b62e2b2f62041aa0221922186d0ef1c41dfda0bb4202b1773acd25dc`。`Info.plist` 版本 `0.1.2`、`LSMinimumSystemVersion 12.0`；Mach-O fat binary 含 x86_64 与 arm64
 
 > Playwright 验证的是浏览器 localStorage 适配器；SQLite、原生菜单、窗口和 DMG 仍需按下面的真机步骤验收。
 
@@ -187,8 +188,8 @@ macOS 应用最小宽度为 1040，以下用浏览器 `npm run dev` 或 Playwrig
 
 ## 15. 验收结论
 
-- [ ] 自动化检查全部通过（GitHub Actions CI 绿色）
-- [ ] macOS Release 工作流产出了 DMG、ZIP 与 checksum
+- [x] 自动化检查全部通过（GitHub Actions CI 绿色）
+- [x] macOS Release 工作流产出了 DMG、ZIP 与 checksum
 - [ ] 真机安装、创建、编辑、别名、关系、时间快照、导入导出、PNG、Explore、菜单、窗口恢复全部通过
 - [ ] 验收人：__________ 日期：__________
 - [ ] 备注：
