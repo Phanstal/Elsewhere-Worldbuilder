@@ -21,7 +21,7 @@
 - `cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check`：通过
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`：通过
 - `cargo test --manifest-path src-tauri/Cargo.toml`：通过
-- GitHub Actions CI：待 tag 推送后记录 run id
+- GitHub Actions CI（commit `6c367b1`，run [`41303737790`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/41303737790)）：前端 lint / format / typecheck / 23 个单测 / build / 11 个 E2E，Rust fmt / clippy / test 全部通过
 - GitHub Actions macOS Release：待 tag 推送后记录 run id 与产物校验值
 
 > Playwright 验证的是浏览器 localStorage 适配器；SQLite、原生菜单、窗口和 DMG 仍需按下面的真机步骤验收。
