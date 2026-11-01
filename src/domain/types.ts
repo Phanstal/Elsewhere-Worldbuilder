@@ -1,4 +1,14 @@
+export const CREATE_TYPES = ['Space', 'Element', 'Event'] as const;
+
+export type CreateType = (typeof CREATE_TYPES)[number];
+
+export const ELEMENT_ICONS = ['character', 'faction', 'concept', 'object'] as const;
+
+export type ElementIcon = (typeof ELEMENT_ICONS)[number];
+
 export const NODE_TYPES = [
+  'Space',
+  'Element',
   'Place',
   'Building',
   'Map',
@@ -40,6 +50,22 @@ export const NODE_GROUPS: { id: NodeGroupId; label: string; types: NodeType[] }[
 ];
 
 export const NODE_TYPE_META: Record<NodeType, NodeTypeMeta> = {
+  Space: {
+    type: 'Space',
+    group: 'space',
+    icon: '<rect x="3" y="5" width="18" height="14" rx="3"></rect><path d="M7 9h5"></path>',
+    defaultWidth: 560,
+    defaultHeight: 360,
+    resizable: true,
+  },
+  Element: {
+    type: 'Element',
+    group: 'entities',
+    icon: '<circle cx="12" cy="8" r="3"></circle><path d="M6 20a6 6 0 0112 0"></path>',
+    defaultWidth: 150,
+    defaultHeight: 72,
+    resizable: false,
+  },
   Place: {
     type: 'Place',
     group: 'space',
@@ -172,6 +198,11 @@ export interface WorldNode {
   width?: number;
   height?: number;
   sourceId?: number;
+  icon?: ElementIcon;
+  parentId?: number;
+  backgroundColor?: string;
+  tags?: string[];
+  imageSrc?: string;
 }
 
 export interface Relation {
@@ -179,6 +210,13 @@ export interface Relation {
   from: number;
   to: number;
   name: string;
+}
+
+export interface WorldSnapshot {
+  id: string;
+  label: string;
+  nodes: WorldNode[];
+  relations: Relation[];
 }
 
 export interface World {
@@ -189,6 +227,8 @@ export interface World {
   updatedAt: string;
   nodes: WorldNode[];
   relations: Relation[];
+  snapshots?: WorldSnapshot[];
+  activeSnapshotId?: string;
 }
 
 export interface WorldSummary {

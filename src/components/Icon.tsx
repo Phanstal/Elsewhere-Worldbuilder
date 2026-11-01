@@ -29,6 +29,18 @@ const ICONS = {
   keyboard:
     '<rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M7 10h.01M11 10h.01M15 10h.01M18 10h.01M8 14h8"></path>',
   info: '<circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path>',
+  search: '<circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4 4"></path>',
+  export: '<path d="M12 15V3M8 7l4-4 4 4"></path><path d="M5 13v6h14v-6"></path>',
+  character: '<circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 20a6.5 6.5 0 0113 0"></path>',
+  faction: '<path d="M12 3l8 4v5c0 4.8-3.4 7.8-8 9-4.6-1.2-8-4.2-8-9V7l8-4z"></path>',
+  concept:
+    '<path d="M9 18h6M10 21h4M8.3 14.5A6 6 0 1115.7 14.5c-.8.6-1.2 1.3-1.2 2.5h-5c0-1.2-.4-1.9-1.2-2.5z"></path>',
+  object: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM4 7.5l8 4.5 8-4.5M12 12v9"></path>',
+  space: '<rect x="3" y="5" width="18" height="14" rx="3"></rect><path d="M7 9h5"></path>',
+  element: '<circle cx="12" cy="8" r="3"></circle><path d="M6 20a6 6 0 0112 0"></path>',
+  event: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"></path>',
+  imagePlus:
+    '<rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="2"></circle><path d="M4 17l5-4 3 3 3-2 5 4"></path><path d="M18 3v5M15.5 5.5h5"></path>',
 } as const;
 
 export type IconName = keyof typeof ICONS;

@@ -3,117 +3,427 @@
   "version": 1,
   "id": "935a7882-479d-45e6-9d38-dc4c551d790b",
   "name": "The Hollow Reach",
-  "updatedAt": "2026-10-27T07:02:16.109Z",
+  "updatedAt": "2026-11-01T11:00:00.000Z",
   "nodes": [
     {
       "id": 101,
       "title": "The Hollow Reach",
-      "type": "Place",
+      "type": "Space",
       "x": 550,
-      "y": 350,
-      "width": 780,
-      "height": 500,
-      "description": "A sheltered valley at the edge of the known roads, where the old maps stop and the weather begins."
+      "y": 340,
+      "width": 720,
+      "height": 460,
+      "description": "A sheltered valley at the edge of the known roads, where the old maps stop and the weather begins.",
+      "backgroundColor": "#e6edf0"
     },
     {
       "id": 102,
-      "title": "Wayfarer's Rest",
-      "type": "Building",
+      "title": "Mira Vale",
+      "type": "Element",
+      "icon": "character",
+      "parentId": 101,
       "x": 320,
-      "y": 250,
-      "description": "A low stone inn built around a chimney that never quite goes out."
+      "y": 240,
+      "description": "A cartographer who charts the roads nobody else will walk.",
+      "tags": [
+        "#cartographer",
+        "#traveler"
+      ]
     },
     {
       "id": 103,
-      "title": "Known Roads",
-      "type": "Map",
+      "title": "Ashen Court",
+      "type": "Element",
+      "icon": "faction",
+      "parentId": 101,
       "x": 780,
-      "y": 250,
-      "description": "The surveyed routes out of the valley, inked in a careful hand."
+      "y": 240,
+      "description": "Keepers of the old crossings. They remember every road that was closed.",
+      "tags": [
+        "#faction",
+        "#old-roads"
+      ]
     },
     {
       "id": 104,
-      "title": "Mira Vale",
-      "type": "Character",
+      "title": "Wayfarer's Rest",
+      "type": "Element",
+      "icon": "object",
+      "parentId": 101,
       "x": 320,
-      "y": 470,
-      "description": "A cartographer who charts the roads nobody else will walk."
+      "y": 460,
+      "description": "A low stone inn built around a chimney that never quite goes out.",
+      "tags": [
+        "#inn"
+      ]
     },
     {
       "id": 105,
-      "title": "Ashen Court",
-      "type": "Faction",
+      "title": "Known Roads",
+      "type": "Element",
+      "icon": "concept",
+      "parentId": 101,
       "x": 780,
-      "y": 470,
-      "description": "Keepers of the old crossings. They remember every road that was closed."
+      "y": 460,
+      "description": "The surveyed routes out of the valley, inked in a careful hand.",
+      "tags": [
+        "#roads",
+        "#knowledge"
+      ]
     },
     {
       "id": 106,
       "title": "The Long Silence",
       "type": "Event",
-      "x": 550,
-      "y": 550,
+      "parentId": 101,
+      "x": 540,
+      "y": 350,
       "description": "The winter the roads emptied and the valley stopped hearing from the coast."
     },
     {
       "id": 107,
       "title": "Wayfare",
-      "type": "Concept",
-      "x": 1000,
-      "y": 150,
-      "description": "The valley's belief that a road is a promise, not a line."
+      "type": "Element",
+      "icon": "concept",
+      "x": 1010,
+      "y": 180,
+      "description": "The valley's belief that a road is a promise, not a line.",
+      "tags": [
+        "#belief"
+      ]
     },
     {
       "id": 108,
       "title": "The Age of Roads",
-      "type": "Timeline",
-      "x": 1000,
-      "y": 470,
+      "type": "Element",
+      "icon": "concept",
+      "x": 1010,
+      "y": 400,
       "description": "Three centuries of survey, closure, and quiet repair."
     }
   ],
   "relations": [
     {
       "id": 201,
-      "from": 104,
-      "to": 105,
+      "from": 102,
+      "to": 103,
       "name": "Sworn to"
     },
     {
       "id": 202,
-      "from": 104,
-      "to": 102,
+      "from": 102,
+      "to": 104,
       "name": "Sheltered at"
     },
     {
       "id": 203,
-      "from": 105,
+      "from": 103,
       "to": 101,
       "name": "Holds"
     },
     {
       "id": 204,
-      "from": 103,
+      "from": 105,
       "to": 101,
       "name": "Charts"
     },
     {
       "id": 205,
       "from": 106,
-      "to": 104,
+      "to": 102,
       "name": "Displaced"
     },
     {
       "id": 206,
       "from": 107,
-      "to": 103,
+      "to": 105,
       "name": "Guides"
     },
     {
       "id": 207,
       "from": 108,
-      "to": 103,
+      "to": 105,
       "name": "Predates"
+    }
+  ],
+  "activeSnapshotId": "b4f0f4e0-6c2a-4a2c-b6a8-4f4f7e0f9a11",
+  "snapshots": [
+    {
+      "id": "b4f0f4e0-6c2a-4a2c-b6a8-4f4f7e0f9a11",
+      "label": "Origin",
+      "nodes": [
+        {
+          "id": 101,
+          "title": "The Hollow Reach",
+          "type": "Space",
+          "x": 550,
+          "y": 340,
+          "width": 720,
+          "height": 460,
+          "description": "A sheltered valley at the edge of the known roads, where the old maps stop and the weather begins.",
+          "backgroundColor": "#e6edf0"
+        },
+        {
+          "id": 102,
+          "title": "Mira Vale",
+          "type": "Element",
+          "icon": "character",
+          "parentId": 101,
+          "x": 320,
+          "y": 240,
+          "description": "A cartographer who charts the roads nobody else will walk.",
+          "tags": [
+            "#cartographer",
+            "#traveler"
+          ]
+        },
+        {
+          "id": 103,
+          "title": "Ashen Court",
+          "type": "Element",
+          "icon": "faction",
+          "parentId": 101,
+          "x": 780,
+          "y": 240,
+          "description": "Keepers of the old crossings. They remember every road that was closed.",
+          "tags": [
+            "#faction",
+            "#old-roads"
+          ]
+        },
+        {
+          "id": 104,
+          "title": "Wayfarer's Rest",
+          "type": "Element",
+          "icon": "object",
+          "parentId": 101,
+          "x": 320,
+          "y": 460,
+          "description": "A low stone inn built around a chimney that never quite goes out.",
+          "tags": [
+            "#inn"
+          ]
+        },
+        {
+          "id": 105,
+          "title": "Known Roads",
+          "type": "Element",
+          "icon": "concept",
+          "parentId": 101,
+          "x": 780,
+          "y": 460,
+          "description": "The surveyed routes out of the valley, inked in a careful hand.",
+          "tags": [
+            "#roads",
+            "#knowledge"
+          ]
+        },
+        {
+          "id": 106,
+          "title": "The Long Silence",
+          "type": "Event",
+          "parentId": 101,
+          "x": 540,
+          "y": 350,
+          "description": "The winter the roads emptied and the valley stopped hearing from the coast."
+        },
+        {
+          "id": 107,
+          "title": "Wayfare",
+          "type": "Element",
+          "icon": "concept",
+          "x": 1010,
+          "y": 180,
+          "description": "The valley's belief that a road is a promise, not a line.",
+          "tags": [
+            "#belief"
+          ]
+        },
+        {
+          "id": 108,
+          "title": "The Age of Roads",
+          "type": "Element",
+          "icon": "concept",
+          "x": 1010,
+          "y": 400,
+          "description": "Three centuries of survey, closure, and quiet repair."
+        }
+      ],
+      "relations": [
+        {
+          "id": 201,
+          "from": 102,
+          "to": 103,
+          "name": "Sworn to"
+        },
+        {
+          "id": 202,
+          "from": 102,
+          "to": 104,
+          "name": "Sheltered at"
+        },
+        {
+          "id": 203,
+          "from": 103,
+          "to": 101,
+          "name": "Holds"
+        },
+        {
+          "id": 204,
+          "from": 105,
+          "to": 101,
+          "name": "Charts"
+        },
+        {
+          "id": 205,
+          "from": 106,
+          "to": 102,
+          "name": "Displaced"
+        },
+        {
+          "id": 206,
+          "from": 107,
+          "to": 105,
+          "name": "Guides"
+        },
+        {
+          "id": 207,
+          "from": 108,
+          "to": 105,
+          "name": "Predates"
+        }
+      ]
+    },
+    {
+      "id": "b4f0f4e0-6c2a-4a2c-b6a8-4f4f7e0f9a12",
+      "label": "After the Silence",
+      "nodes": [
+        {
+          "id": 101,
+          "title": "The Hollow Reach",
+          "type": "Space",
+          "x": 550,
+          "y": 340,
+          "width": 720,
+          "height": 460,
+          "description": "A sheltered valley at the edge of the known roads, where the old maps stop and the weather begins.",
+          "backgroundColor": "#e6edf0"
+        },
+        {
+          "id": 102,
+          "title": "Mira Vale",
+          "type": "Element",
+          "icon": "character",
+          "parentId": 101,
+          "x": 320,
+          "y": 240,
+          "description": "A cartographer who charted the roads out of the valley, then stopped drawing.",
+          "tags": [
+            "#cartographer",
+            "#traveler"
+          ]
+        },
+        {
+          "id": 103,
+          "title": "Ashen Court",
+          "type": "Element",
+          "icon": "faction",
+          "parentId": 101,
+          "x": 780,
+          "y": 240,
+          "description": "Keepers of the old crossings. They remember every road that was closed.",
+          "tags": [
+            "#faction",
+            "#old-roads"
+          ]
+        },
+        {
+          "id": 104,
+          "title": "Wayfarer's Rest",
+          "type": "Element",
+          "icon": "object",
+          "parentId": 101,
+          "x": 320,
+          "y": 460,
+          "description": "A low stone inn built around a chimney that never quite goes out.",
+          "tags": [
+            "#inn"
+          ]
+        },
+        {
+          "id": 105,
+          "title": "Known Roads",
+          "type": "Element",
+          "icon": "concept",
+          "parentId": 101,
+          "x": 780,
+          "y": 460,
+          "description": "The surveyed routes out of the valley, inked in a careful hand.",
+          "tags": [
+            "#roads",
+            "#knowledge"
+          ]
+        },
+        {
+          "id": 107,
+          "title": "Wayfare",
+          "type": "Element",
+          "icon": "concept",
+          "x": 1010,
+          "y": 180,
+          "description": "The valley's belief that a road is a promise, not a line.",
+          "tags": [
+            "#belief"
+          ]
+        },
+        {
+          "id": 108,
+          "title": "The Age of Roads",
+          "type": "Element",
+          "icon": "concept",
+          "x": 1010,
+          "y": 400,
+          "description": "Three centuries of survey, closure, and quiet repair."
+        }
+      ],
+      "relations": [
+        {
+          "id": 201,
+          "from": 102,
+          "to": 103,
+          "name": "Sworn to"
+        },
+        {
+          "id": 202,
+          "from": 102,
+          "to": 104,
+          "name": "Sheltered at"
+        },
+        {
+          "id": 203,
+          "from": 103,
+          "to": 101,
+          "name": "Holds"
+        },
+        {
+          "id": 204,
+          "from": 105,
+          "to": 101,
+          "name": "Charts"
+        },
+        {
+          "id": 206,
+          "from": 107,
+          "to": 105,
+          "name": "Guides"
+        },
+        {
+          "id": 207,
+          "from": 108,
+          "to": 105,
+          "name": "Predates"
+        }
+      ]
     }
   ]
 }

@@ -4,6 +4,7 @@ import {
   type Relation,
   type World,
   type WorldNode,
+  type WorldSnapshot,
   type WorldSummary,
 } from './types';
 
@@ -11,14 +12,19 @@ export const WORLD_WIDTH = 1100;
 export const WORLD_HEIGHT = 680;
 export const MIN_ZOOM = 0.3;
 export const MAX_ZOOM = 2;
+export const MAX_SNAPSHOTS = 3;
 
 let fallbackId = 0;
 
 function uniqueNumericId(world: World): number {
   let id = Date.now();
+  const snapshotNodes = (world.snapshots ?? []).flatMap((snapshot) => snapshot.nodes);
+  const snapshotRelations = (world.snapshots ?? []).flatMap((snapshot) => snapshot.relations);
   const existing = new Set<number>([
     ...world.nodes.map((node) => node.id),
     ...world.relations.map((relation) => relation.id),
+    ...snapshotNodes.map((node) => node.id),
+    ...snapshotRelations.map((relation) => relation.id),
   ]);
   while (existing.has(id)) id += 1;
   if (!Number.isFinite(id)) {
@@ -37,7 +43,92 @@ export function createWorld(name = 'Untitled World'): World {
     updatedAt: new Date().toISOString(),
     nodes: [],
     relations: [],
+    snapshots: [
+      {
+        id: crypto.randomUUID(),
+        label: 'Origin',
+        nodes: [],
+        relations: [],
+      },
+    ],
   };
+}
+
+export function snapshotIndex(world: World): number {
+  const snapshots = world.snapshots ?? [];
+  if (snapshots.length === 0) return 0;
+  const index = snapshots.findIndex((snapshot) => snapshot.id === world.activeSnapshotId);
+  return index === -1 ? 0 : index;
+}
+
+export function normalizeWorldSnapshots(world: World): World {
+  const source = Array.isArray(world.snapshots) ? world.snapshots : [];
+  const snapshots: WorldSnapshot[] =
+    source.length > 0
+      ? source.slice(0, MAX_SNAPSHOTS).map((snapshot, index) => ({
+          id:
+            typeof snapshot?.id === 'string' && snapshot.id.length > 0
+              ? snapshot.id
+              : crypto.randomUUID(),
+          label:
+            typeof snapshot?.label === 'string' && snapshot.label.trim().length > 0
+              ? snapshot.label.slice(0, 40)
+              : index === 0
+                ? 'Origin'
+                : `Time ${index + 1}`,
+          nodes: Array.isArray(snapshot?.nodes) ? snapshot.nodes : [],
+          relations: Array.isArray(snapshot?.relations) ? snapshot.relations : [],
+        }))
+      : [
+          {
+            id: crypto.randomUUID(),
+            label: 'Origin',
+            nodes: world.nodes,
+            relations: world.relations,
+          },
+        ];
+
+  const index = Math.max(
+    0,
+    snapshots.findIndex((snapshot) => snapshot.id === world.activeSnapshotId),
+  );
+  snapshots[index] = {
+    ...snapshots[index],
+    nodes: world.nodes,
+    relations: world.relations,
+  };
+  return {
+    ...world,
+    snapshots,
+    activeSnapshotId: snapshots[index].id,
+  };
+}
+
+export function syncActiveSnapshot(world: World, index = snapshotIndex(world)): World {
+  const normalized = normalizeWorldSnapshots(world);
+  const snapshots = (normalized.snapshots ?? []).map((snapshot, entryIndex) =>
+    entryIndex === index
+      ? { ...snapshot, nodes: world.nodes, relations: world.relations }
+      : snapshot,
+  );
+  return {
+    ...world,
+    snapshots,
+    activeSnapshotId: snapshots[index]?.id ?? world.activeSnapshotId,
+  };
+}
+
+export function activateSnapshot(world: World, index: number): World {
+  const synced = syncActiveSnapshot(world);
+  const snapshots = synced.snapshots ?? [];
+  const target = snapshots[index];
+  if (!target) return synced;
+  return touchWorld({
+    ...synced,
+    nodes: structuredClone(target.nodes),
+    relations: structuredClone(target.relations),
+    activeSnapshotId: target.id,
+  });
 }
 
 export function touchWorld(world: World): World {
@@ -77,6 +168,8 @@ export function createNode(
     y: Math.round(pos.y),
     description: '',
     ...(meta.resizable ? { width: meta.defaultWidth, height: meta.defaultHeight } : {}),
+    ...(type === 'Space' ? { backgroundColor: '#E8EEF1' } : {}),
+    ...(type === 'Element' ? { icon: 'character' as const } : {}),
   };
 }
 
@@ -90,6 +183,19 @@ export function addNode(
     world: touchWorld({ ...world, nodes: [...world.nodes, node] }),
     node,
   };
+}
+
+export function changeNodeType(world: World, id: number, type: NodeType): World {
+  const meta = NODE_TYPE_META[type];
+  return updateNode(world, id, (node) => ({
+    ...node,
+    type,
+    ...(meta.resizable
+      ? { width: node.width ?? meta.defaultWidth, height: node.height ?? meta.defaultHeight }
+      : {}),
+    ...(type === 'Space' ? { backgroundColor: node.backgroundColor ?? '#E8EEF1' } : {}),
+    ...(type === 'Element' ? { icon: node.icon ?? 'character' } : {}),
+  }));
 }
 
 export function createAlias(
@@ -125,10 +231,49 @@ export function updateNode(
   return changed ? touchWorld({ ...world, nodes }) : world;
 }
 
+export function moveNode(world: World, id: number, x: number, y: number): World {
+  const node = world.nodes.find((entry) => entry.id === id);
+  if (!node) return world;
+  const dx = Math.round(x - node.x);
+  const dy = Math.round(y - node.y);
+  if (dx === 0 && dy === 0) return world;
+
+  const moving = new Set<number>([id]);
+  let expanded = true;
+  while (expanded) {
+    expanded = false;
+    for (const entry of world.nodes) {
+      const parent = entry.sourceId ?? entry.parentId;
+      if (parent !== undefined && moving.has(parent) && !moving.has(entry.id)) {
+        moving.add(entry.id);
+        expanded = true;
+      }
+    }
+  }
+
+  let changed = false;
+  const nodes = world.nodes.map((entry) => {
+    if (!moving.has(entry.id)) return entry;
+    changed = true;
+    return { ...entry, x: entry.x + dx, y: entry.y + dy };
+  });
+  return changed ? touchWorld({ ...world, nodes }) : world;
+}
+
 export function removeNode(world: World, id: number): World {
   const targets = new Set<number>([id]);
   for (const node of world.nodes) {
-    if (node.sourceId === id) targets.add(node.id);
+    if (node.sourceId === id || node.parentId === id) targets.add(node.id);
+  }
+  let expanded = true;
+  while (expanded) {
+    expanded = false;
+    for (const node of world.nodes) {
+      if (node.sourceId !== undefined && targets.has(node.sourceId) && !targets.has(node.id)) {
+        targets.add(node.id);
+        expanded = true;
+      }
+    }
   }
   return touchWorld({
     ...world,
@@ -285,4 +430,32 @@ export function filenameForWorld(name: string, extension: string): string {
       .replace(/\s+/g, ' ')
       .slice(0, 80) || 'Elsewhere World';
   return `${base}.${extension}`;
+}
+
+export function isContainerNode(node: WorldNode): boolean {
+  return node.type === 'Space' || node.type === 'Place' || node.type === 'Category';
+}
+
+export function containingSpace(world: World, node: WorldNode): WorldNode | undefined {
+  const candidates = world.nodes
+    .filter((candidate) => candidate.id !== node.id && isContainerNode(candidate))
+    .filter((space) => {
+      const size = nodeVisualSize(space);
+      return (
+        node.x > space.x - size.width / 2 &&
+        node.x < space.x + size.width / 2 &&
+        node.y > space.y - size.height / 2 &&
+        node.y < space.y + size.height / 2
+      );
+    })
+    .sort((a, b) => {
+      const aSize = nodeVisualSize(a);
+      const bSize = nodeVisualSize(b);
+      return aSize.width * aSize.height - bSize.width * bSize.height;
+    });
+  return candidates[0];
+}
+
+export function nodesInside(world: World, spaceId: number): WorldNode[] {
+  return world.nodes.filter((node) => node.parentId === spaceId);
 }

@@ -1,7 +1,7 @@
 {
   "name": "elsewhere",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.2",
   "type": "module",
   "description": "A local-first worldbuilding studio for macOS.",
   "scripts": {

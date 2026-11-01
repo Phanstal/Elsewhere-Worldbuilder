@@ -4,12 +4,14 @@
 
 Elsewhere 是一个单窗口、本地优先的 macOS 世界观构建工具：
 
-- 在一张可平移、可缩放的空间画布上摆放角色、地点、阵营、事件等设定；
+- 在一张可平移、可缩放的空间画布上摆放空间（Space）、元素（Element）与事件（Event）；
+- 用世界时间（最多 3 个快照）记录同一世界在不同时刻的状态；
 - 用别名表达同一事物的不同侧面，用关系线表达它们之间的联系；
 - 所有数据只保存在本机，无账号、无云同步、无遥测；
 - 以 `.elsew` JSON 文件导入 / 导出，可导出整张世界为 PNG；
-- 首版以**未签名、未公证**的 `.app` / `.dmg` 形式个人分发；
+- 以**未签名、未公证**的 `.app` / `.dmg` 形式个人分发；
 - 当前在 Windows 上开发，通过 GitHub Actions 的 macOS runner 产出 macOS 构建，最终由用户在真机验收；
+- 当前版本 v0.1.2，对应 Figma Make **Version 33** 设计；
 - 为未来的 iOS / Android 版本保留同一套领域模型和存储端口，不把业务逻辑绑死在桌面壳上。
 
 原型来自 [Figma Make](https://www.figma.com/make/aeRRMdDfVsyuJvz2Dy1DV3/Build-Elsewhere-Worldbuilding-Studio?t=Y0SPn1WcqeAIuBMw-1)。Figma MCP 不支持 Make 文件，因此视觉契约以冻结在 `docs/design/` 的原型 CSS、导出的 `.elsew` 样例和截图为依据，而不是接入 Figma MCP。
@@ -20,12 +22,12 @@ Elsewhere 是一个单窗口、本地优先的 macOS 世界观构建工具：
 ┌────────────────────────────────────────────────────┐
 │ app/App.tsx              首页 / 工作室切换、命令接线 │
 │ features/home            世界档案                   │
-│ features/studio          工具栏、侧栏、画布、检查器  │
+│ features/studio          工具栏、侧栏、画布、时间轴、检查器 │
 └──────────────────┬─────────────────────────────────┘
                    │ 只依赖 domain 类型与端口
 ┌──────────────────▼─────────────────────────────────┐
-│ domain/types.ts          节点类型、分组、尺寸、图形  │
-│ domain/world.ts          纯函数：增删改、别名、关系  │
+│ domain/types.ts          节点类型、快照、尺寸、图形  │
+│ domain/world.ts          纯函数：增删改、别名、关系、快照 │
 │ domain/elsew.ts          .elsew 序列化、校验、导入   │
 │ domain/repository.ts     WorldRepository 端口        │
 └──────────────────┬─────────────────────────────────┘
@@ -61,26 +63,29 @@ interface WorldNode {
   width?: number;
   height?: number;
   sourceId?: number;
+  icon?: 'character' | 'faction' | 'concept' | 'object';
+  parentId?: number;
+  backgroundColor?: string;
+  tags?: string[];
+  imageSrc?: string;
 }
 ```
 
-- `NODE_TYPES` 固定 14 种，分为 Space / Entities / Lore / Media 四组：
-  - Space：Place、Building、Map
-  - Entities：Character、Faction、Species、Object
-  - Lore：Event、Timeline、Concept、System、Culture、Category
-  - Media：Image
-- 每种类型在 `NODE_TYPE_META` 中有默认尺寸、图标路径和是否可缩放的标记。Place 与 Category 是容器型节点，右下角有缩放把手；其余节点尺寸固定，保证画布语言统一。
-- `title` / `description` / `type` 可以在检查器中修改；标题也可在画布上双击就地改名。
-- 坐标是“世界坐标”，与缩放和平移无关；世界固定为 `1100 × 680`，视口初始以 90% 居中显示。
+- **创建类型**只有三种：`Space`（容器 / 区域，560×360，可缩放，可设背景色）、`Element`（人物 / 物件 / 阵营 / 概念，150×72，带图标）、`Event`（时间点，174×46）。
+- `NODE_TYPES` 仍保留旧的 14 种类型，用于渲染 v0.1.0 或原型导入的世界；新世界不再从 14 种类型中创建。
+- 每种类型在 `NODE_TYPE_META` 中有默认尺寸、图标路径和是否可缩放的标记。`Space`（以及旧的 `Place` / `Category`）是容器型节点；其余节点尺寸固定。
+- `parentId` 表示节点位于某个 Space 内。创建在 Space 内的节点会自动挂到该 Space；拖入 / 拖出 Space 时重新计算。删除 Space 会一并删除其中的节点，移动 Space 会带着子节点一起移动。
+- `icon` 只对 Element 有意义；`backgroundColor` 只对 Space 有意义；`tags` 是检查器里的逗号分隔短标签；`imageSrc` 是内联 data URL。
+- 坐标是“世界坐标”，与缩放和平移无关；世界仍为 `1100 × 680`，视口初始以 90% 居中显示。
 
 ### 3.2 别名
 
 别名不是独立概念，而是一条带 `sourceId` 的节点：
 
-- 复制源节点的标题、类型、描述和尺寸；
+- 复制源节点的标题、类型、图标、图片和尺寸；
 - 位置偏移 `+130, +80`，方便拖开；
-- 在侧栏、检查器和探索面板显示 `TYPE · Alias`；
-- 侧栏 `All Nodes` 与世界摘要中的节点计数只统计“基础节点”（`sourceId === undefined`），但画布上会绘制全部节点；
+- 在检查器和探索面板显示 `TYPE · Alias`；
+- `All Elements` 抽屉与世界摘要中的节点计数只统计“基础节点”（`sourceId === undefined`），但画布上会绘制全部节点；
 - 删除基础节点时，其别名一并删除；删除别名不影响基础节点。
 
 `world.ts` 中的 `baseNodeCount` 和 `isAlias` 集中处理这些规则。
@@ -112,10 +117,29 @@ interface World {
   updatedAt: string;
   nodes: WorldNode[];
   relations: Relation[];
+  snapshots?: WorldSnapshot[];
+  activeSnapshotId?: string;
 }
 ```
 
-`World` 同时是持久化单元和 `.elsew` 文件结构。`updatedAt` 在每次变更时刷新，用于首页“最近编辑”排序。
+`World` 同时是持久化单元和 `.elsew` 文件结构。顶层 `nodes` / `relations` 表示**当前激活快照**的图；`snapshots` 保存最多 3 个时刻。`updatedAt` 在每次变更时刷新，用于首页“最近编辑”排序。
+
+### 3.5 世界时间
+
+```ts
+interface WorldSnapshot {
+  id: string;
+  label: string;
+  nodes: WorldNode[];
+  relations: Relation[];
+}
+```
+
+- 新世界自动有 `Origin`；`MAX_SNAPSHOTS = 3`。
+- 切换时间：`activateSnapshot(world, index)` 用目标快照替换顶层图，并把当前顶层图写回原快照。
+- 每次提交：`syncActiveSnapshot(world)` 把顶层图同步进当前快照，保证时间轴始终对应画布。
+- 新增 / 删除 / 重命名：直接构造新快照列表；删除时至少保留 `Origin`。
+- `.elsew` 文件同时写顶层图与快照；导入时以 `activeSnapshotId` 对应的快照作为顶层图。旧文件没有快照，导入时补一个 `Origin`。
 
 ## 4. 持久化与保存管线
 
@@ -149,7 +173,7 @@ CREATE TABLE IF NOT EXISTS worlds (
 );
 ```
 
-列表只查询 `id / name / updated_at / node_count`，打开世界时才读取 `data` 整段 JSON。`node_count` 使用基础节点数，与侧栏“All Nodes”一致。
+列表只查询 `id / name / updated_at / node_count`，打开世界时才读取 `data` 整段 JSON。`node_count` 使用基础节点数，与侧栏“All Elements”计数一致。
 
 macOS 数据位置：
 
@@ -179,22 +203,26 @@ macOS 数据位置：
 ### 5.1 布局
 
 - 顶部工具栏 58px：品牌、世界名下拉、撤销 / 重做、缩放、Fit、保存状态、Create/Explore 切换、`.elsew` 保存、PNG 导出；
-- 左侧栏 190px：World / All Nodes、按四组排列的 14 个创建项、底部 Quick add；
-- 中间画布：点阵背景、世界边界、关系线、节点；
-- 右侧检查器 250px：选中节点或关系时显示；未选中时显示空状态；
+- 左侧栏 210px：Space / Element / Event 三张创建卡、底部 `Search world…` 与 `All Elements` 抽屉；
+- 中间画布：蓝灰点阵、世界边界、Space 区域、关系线、节点；
+- 右侧检查器 270px：选中节点或关系时显示；未选中时显示空状态；
+- 底部世界时间轴：最多 3 个时刻，支持切换、重命名、删除、添加；
 - Explore 模式隐藏侧栏和检查器，点击节点弹出只读浮层。
 
-窄屏（≤980px）隐藏侧栏，检查器变为底部抽屉，工具栏保留核心动作；≤640px 进一步压缩首页与工具栏。
+窄屏（≤980px）隐藏侧栏，工具栏出现 Quick add 按钮，检查器变为底部抽屉并带关闭按钮；≤640px 进一步压缩首页与工具栏，Quick add 使用三选一浮层。
 
 ### 5.2 画布
 
 - 拖拽空白区域平移；滚轮 / 触控板缩放，缩放范围 0.3–2；
-- 拖动节点移动，拖动 Place / Category 右下角缩放；
+- 拖动节点移动；拖动 Space 时子节点一起移动；拖动 Space 右下角缩放；
 - 从节点左右端口拖出关系线，落在目标节点上建立关系；
 - 双击节点标题就地改名；双击关系标签改名；
-- 空白点击取消选择；Esc 取消选择 / 关闭浮层。
+- 空白点击取消选择；Esc 关闭右键菜单 / Quick add / 浮层；
+- 右键空白打开创建菜单（Space / Element / Event / Image），在点击位置创建；
+- 拖入图片文件时，在落点创建 Image 节点；检查器也可为 Element 或 Space 选择图片；
+- 双击节点标题、双击关系标签就地改名；拖入 Space 自动设置父级。
 
-实现上，画布用一个 `transform: translate(...) scale(...)` 的世界层承载 SVG 关系线和绝对定位节点；指针事件统一在画布容器捕获，按 `dragRef` 状态分派 pan / node / resize，避免每个节点各写一套全局监听。
+实现上，画布用一个 `transform: translate(...) scale(...)` 的世界层承载 SVG 关系线和绝对定位节点；指针事件统一在画布容器捕获，按 `dragRef` 状态分派 pan / node / resize，避免每个节点各写一套全局监听。关系路径同时写内联 `fill` / `stroke` 属性，PNG 导出时不会丢失样式。
 
 ### 5.3 撤销与事务
 
@@ -211,26 +239,23 @@ macOS 数据位置：
   "version": 1,
   "id": "uuid",
   "name": "The Hollow Reach",
-  "updatedAt": "2026-10-27T07:09:42.878Z",
+  "updatedAt": "2026-11-01T09:30:00.000Z",
+  "activeSnapshotId": "snapshot-origin",
   "nodes": [
     {
       "id": 104,
       "title": "Mira Vale",
-      "type": "Character",
+      "type": "Element",
       "x": 320,
       "y": 470,
-      "description": "A cartographer who charts the roads nobody else will walk."
-    },
-    {
-      "id": 105,
-      "title": "The Ashen Court",
-      "type": "Faction",
-      "x": 780,
-      "y": 470,
-      "description": "Keepers of the old crossings."
+      "description": "A cartographer who charts the roads nobody else will walk.",
+      "icon": "character",
+      "parentId": 101,
+      "tags": ["cartographer", "traveler"]
     }
   ],
-  "relations": [{ "id": 201, "from": 104, "to": 105, "name": "Sworn to" }]
+  "relations": [{ "id": 201, "from": 104, "to": 105, "name": "Sworn to" }],
+  "snapshots": [{ "id": "snapshot-origin", "label": "Origin", "nodes": [], "relations": [] }]
 }
 ```
 
@@ -240,20 +265,23 @@ macOS 数据位置：
 - `name` 非空字符串，`nodes` / `relations` 为数组；
 - 每个节点必须有有限数值的 `id / x / y`，合法 `type`，字符串 `title`；`sourceId` 若指向不存在的节点会被丢弃；
 - 关系两端必须存在，`name` 缺省为 `Relation`；
-- 原型导出的旧文件兼容：缺少 `width / height` 时按类型补默认尺寸；`id` 可以是原型的时间戳数字；
+- `icon` 只接受四个枚举值；`parentId` 必须指向一个存在的 Space；`backgroundColor` 必须是 `#rrggbb`；`tags` 最多 12 个、每个 30 字符；`imageSrc` 必须是 `data:image/` 且不超过 6 MB；
+- 原型导出的旧文件兼容：缺少 `width / height` 时按类型补默认尺寸；`id` 可以是原型的时间戳数字；没有 `snapshots` 时自动补 `Origin`；
+- 有 `snapshots` 时，`activeSnapshotId` 指向的快照成为顶层图；顶层图与快照不一致的文件以快照为准；
 - 导入总是创建**新世界**（新 UUID、新 `updatedAt`），不会覆盖已有世界；标题冲突时保持文件内名称，用户可再改。
 
-导出文件使用 2 空格缩进、UTF-8 无 BOM，文件名由世界名清洗为安全字符后加 `.elsew`。
+导出文件使用 2 空格缩进、UTF-8 无 BOM；导出前会先 `syncActiveSnapshot`，保证激活快照与顶层图一致。文件名由世界名清洗为安全字符后加 `.elsew`。
 
 ## 7. PNG 导出
 
 `infra/export/png.ts` 的做法：
 
-1. 克隆 `.world` 元素到屏幕内一个临时舞台；
+1. 克隆 `.world` 元素到屏幕内一个临时舞台，并给舞台加 `.studio-v2` 类，使 v33 样式在克隆中生效；
 2. 临时舞台固定在 `left: 0; top: 0; z-index: -1`，让 `html-to-image` 在同一坐标系克隆，避免负偏移导致空白图；
-3. 以 2 倍像素比渲染，输出包含点阵背景、节点、关系线的整张世界；
-4. 通过 `saveFile` 走原生保存对话框（浏览器模式退化为下载）；
-5. 完成后移除临时舞台。
+3. 移除选中态、连接端口、缩放把手和创建菜单；关系 SVG 路径使用内联属性，防止序列化时丢样式；
+4. 以 2 倍像素比渲染，输出包含点阵背景、Space、节点、关系线的整张世界；
+5. 通过 `saveFile` 走原生保存对话框（浏览器模式退化为下载）；
+6. 完成后移除临时舞台。
 
 不要把舞台移回屏幕外：`html-to-image` 的克隆会保留原位置，负坐标会得到空白 PNG；这是开发中实际踩过的坑。
 
@@ -288,16 +316,16 @@ macOS 数据位置：
 
 - 领域层纯 TypeScript，不依赖 DOM；节点、别名、关系、`.elsew` 校验可直接复用；
 - `WorldRepository` 是端口；移动端可以换 SQLite（Tauri 2 mobile）或平台数据库，不改 UI 业务；
-- 画布手势层封装在 `Canvas.tsx`，后续可补双指缩放 / 长按菜单；
+- 画布手势层封装在 `StudioCanvas.tsx`，后续可补双指缩放 / 长按菜单；
 - 布局已有窄屏断点，侧栏、检查器可转为抽屉；
 - 导出层分成“生成数据”和“保存到平台”两步，移动端可接分享面板。
 
-尚未为移动端做真机适配、触控手势细化和 App Store 签名；这些不在 v0.1.0 范围内。
+尚未为移动端做真机适配、触控手势细化和 App Store 签名；这些不在当前版本范围内。
 
 ## 10. 测试策略
 
-- **单元测试**：`tests/unit/world.test.ts`（创建、别名、关系、计数、边界、文件名、fitView）、`tests/unit/elsew.test.ts`（序列化、合法 / 非法导入、原型 schema）、`tests/unit/localRepository.test.ts`；
-- **E2E**：`tests/e2e/studio.spec.ts` 覆盖创建世界、编辑并刷新回读、改名、别名、连线与关系改名、`.elsew` / PNG 下载、导入、Explore、缩放把手、删除世界、窄屏 Quick add；
+- **单元测试**：23 个用例，覆盖创建、移动容器子节点、别名、关系、计数、边界、fitView、快照切换、容器包含关系、v2 字段与快照序列化、旧文件补 `Origin`、合法 / 非法导入；
+- **E2E**：11 个用例，覆盖创建世界、编辑并刷新回读、改名、别名、连线与关系改名、`.elsew` / PNG 下载、导入、Explore、缩放把手、时间快照、删除世界、窄屏 Quick add；
 - **原生验证**：在 Windows 上用 WebView2 CDP 连接真实 Tauri 窗口，新建 / 改名 / 自动保存，再直接查询 `elsewhere.db` 验证 SQLite 数据；macOS 的菜单、overlay titlebar、保存对话框由真机验收覆盖；
 - **CI**：Ubuntu 跑前端与 Playwright（Chromium），macOS 跑 rustfmt / clippy / cargo test，并打 universal `.app`。
 
@@ -305,12 +333,13 @@ macOS 数据位置：
 
 - 无 Apple 签名 / 公证，首次启动需要手动放行；无自动更新。
 - 无云同步、账号、协作、版本历史（仅当前会话的撤销 / 重做）。
-- 世界尺寸固定 `1100 × 680`，节点不能旋转；容器缩放只允许 Place / Category。
+- 世界尺寸固定 `1100 × 680`，节点不能旋转；容器缩放只允许 Space（及旧 Place / Category）。
+- 世界时间最多 3 个快照，没有快照之间的合并或差异比较；快照是整图拷贝，节点数量大时文件会相应变大。
 - 关系是两节点间的有向命名连线，不支持多重边分组、路径点或跨世界引用。
 - PNG 为整张世界的 2 倍渲染，超大世界会按浏览器画布上限降级；不导出为矢量。
-- 别名与基础节点共享标题和类型，但描述、位置独立；不支持“同步编辑”。
+- 别名与基础节点共享标题、类型、图标、图片等显示字段，但描述、位置、父级独立；不支持“同步编辑”。
 - 无数据库加密；数据库随用户账户权限保护。
-- 界面为英文，时间格式为 en-US；这与原型一致。
+- 界面为英文，这与原型一致。
 - 自动保存窗口约 420 ms；返回、`⌘S`、关闭前会 flush，强杀进程仍可能丢失最后不到 420 ms 的修改。
 
 ## 12. 关键决策
@@ -321,6 +350,7 @@ macOS 数据位置：
 | 画布实现 | DOM + SVG，不用 Canvas/WebGL           | 节点是富文本卡片、需要可访问的输入框和 CSS 视觉；数量级（几十到几百）不需要 WebGL |
 | 状态管理 | 单个 `useWorldEditor` + 不可变 World   | 撤销 / 重做、保存、事务集中，避免引入全局状态库                                   |
 | 持久化   | SQLite（桌面）+ localStorage（浏览器） | 本地优先、无服务；浏览器模式让 E2E 不依赖原生壳                                   |
+| 世界时间 | 整图快照，最多 3 个                    | 与 Figma Version 33 的时间轴一致；实现简单、离线可靠，不需要版本图数据库          |
 | 文件格式 | 显式 `format/version` JSON             | 可读、可手工修复、可跨平台；比二进制或数据库文件更适合分享                        |
 | 字体     | Georgia + 系统无衬线 + 等宽小标签      | 原型是温暖的编辑风格，不引入网络字体，离线可用                                    |
 | 图片导出 | `html-to-image` 克隆世界层             | 与屏幕呈现一致，开发成本低；无需维护第二套 SVG 渲染器                             |

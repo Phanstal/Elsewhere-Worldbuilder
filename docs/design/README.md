@@ -5,14 +5,25 @@ This folder is the frozen visual contract for Elsewhere. The app is a hand-built
 ## Source
 
 - Figma Make prototype: [Build Elsewhere Worldbuilding Studio](https://www.figma.com/make/aeRRMdDfVsyuJvz2Dy1DV3/Build-Elsewhere-Worldbuilding-Studio?t=Y0SPn1WcqeAIuBMw-1)
-- Frozen: 2026-10-27
-- `prototype.css` — the prototype's compiled CSS (46 KB), used to read exact colors, type sizes, borders, and spacing
+- Frozen: 2026-11-01 (Version 33)
+- `prototype.css` — the Version 33 prototype's compiled CSS, used to read exact colors, type sizes, borders, and spacing
 - `prototype-home-full.png` + `prototype-home-full.html` — the frozen home screen reference
+- `prototype-studio.png`, `prototype-timeline.png` — frozen Version 33 studio and world-time references
 - `prototype-world.elsew.json` — a world exported from the prototype; used to verify `.elsew` compatibility
-- `app-home-world.png`, `app-studio-full.png`, `app-explore-full.png` — final implementation screenshots at 1440×900 / 2× (CSS pixels 1440×900)
+- `app-home-world.png`, `app-studio-full.png`, `app-explore-full.png` — final v0.1.2 implementation screenshots at 1440×900 / 2× (CSS pixels 1440×900)
 - `icon-source.png` — source artwork for the app icon; the `.icns` / `.ico` / PNG set is generated with `npx tauri icon docs/design/icon-source.png`
 
 Figma Make files cannot be opened through the Figma MCP server (`create_session` rejects them), so the prototype was inspected in a browser and its CSS and markup were copied into this folder rather than fetched through MCP.
+
+## Version 33 differences
+
+The current studio is the 2026-11-01 Version 33 design. Compared with the 0.1.0 studio it has:
+
+- Three broad create types — **Space**, **Element**, **Event** — instead of fourteen palette entries. Legacy node types still render for imported worlds.
+- **World time** snapshots: up to three states (`Origin`, then two later moments), switchable from the bottom timeline. Each snapshot keeps its own nodes and relations.
+- The **All Elements** outline drawer, world search, and a right-click canvas create menu.
+- Element icons (character / faction / concept / object), Space backgrounds, parent containment, tags, and image upload / drop.
+- A new blue-gray canvas, 210 px sidebar, 270 px inspector, serif node titles, and the Version 33 timeline.
 
 ## Design language
 
@@ -21,7 +32,7 @@ Elsewhere should feel like a quiet atlas or a well-made index card box, not a pr
 - **Warm ivory paper** rather than white or gray.
 - **Editorial serif display type** for world and node names; a neutral system sans for UI; spaced uppercase monospace for micro-labels.
 - **Hairline borders** and almost no shadow. The only large shadow is the home archive card and the Explore card.
-- **A dot grid** on the canvas, with a subtly different paper tone inside world bounds.
+- **A dot grid** on the blue-gray studio canvas, with a lighter space surface for regions.
 - **One accent**: a dusty blue used for selection, focus, and the active mode. Everything else is ink, muted ink, or line.
 - **No icon library**; 24×24 stroke icons are inline SVG paths in `src/components/Icon.tsx`.
 
@@ -30,8 +41,8 @@ Elsewhere should feel like a quiet atlas or a well-made index card box, not a pr
 | Token | Value | Use |
 | --- | --- | --- |
 | `--ivory` | `#f6f5f0` | app and card paper |
-| `--canvas` | `#f0efe9` | canvas background outside the world |
-| `--canvas-inner` | `#f4f2ec` | inside the world boundary |
+| `--canvas` | `#eef1f1` | studio canvas background |
+| `--canvas-inner` | `#f4f2ec` | legacy world boundary |
 | `--line` | `#dfe0da` | hairlines, node borders |
 | `--line-strong` | `#c9cbc4` | hover borders, dividers |
 | `--ink` | `#282b2d` | primary text |
@@ -58,6 +69,15 @@ No web fonts are loaded. Georgia and the system UI font are always available off
 
 ## Layout
 
+### Studio (Version 33)
+
+- Toolbar 58 px: brand, world title, centred undo / redo / zoom / Fit, right-side save state, Create / Explore, `Save .elsew`, `Export PNG`.
+- Sidebar 210 px: three create cards and, at the bottom, `Search world…` plus `All Elements`.
+- Canvas: 1 px inner rule, dot grid, nodes on a 1100 × 680 world, relation labels on curves.
+- Inspector 270 px: type, description, type-specific fields, delete. Relation inspector replaces it when a relation is selected.
+- Bottom **World time** strip: up to three snapshots; choose, rename, delete, or add a moment.
+- ≤980 px: sidebar hides, toolbar gets a quick-add button, inspector becomes a bottom sheet; ≤640 px: quick-add palette.
+
 ### Home
 
 - Header 68px: brand at left, italic serif tagline at right.
@@ -67,41 +87,37 @@ No web fonts are loaded. Georgia and the system UI font are always available off
 - Empty state replaces the list with a quiet message; the card is not hidden, so the layout remains stable.
 - At ≤640px the grid becomes one column and the archive card follows the intro.
 
-### Studio
+### Studio (Version 33)
 
-- Toolbar: 58px tall; `190px 1fr auto` inner grid. Brand block 190px, world title centered left, action cluster right. The whole bar is a drag region on macOS, with `padding-left: 82px` for traffic lights.
-- Workspace: `190px 1fr 250px` — sidebar, canvas, inspector.
-- Canvas is the remaining area; the world layer is `1100 × 680` and initially scaled to 90% and centered.
-- Sidebar: `20px 12px` padding; `NAVIGATE`, `CREATE` micro-labels; World and All Nodes rows; four groups with numbered labels; each type row is a 30px-high ghost button that turns ivory on hover.
-- Inspector: 250px; `NODE TYPE` eyebrow, serif title, `TYPE` select, `DESCRIPTION` textarea, alias/delete row, and a bottom column for relation metadata / create alias. When nothing is selected, a quiet empty message.
-- At ≤980px the sidebar is removed, Quick add appears in the toolbar, and the inspector becomes a bottom sheet with `has-selection`.
-- At ≤640px the home layout stacks and toolbar spacing tightens.
+- Toolbar 58px: brand block, world title, centered undo / redo / zoom / Fit, right-side save state, Create / Explore, `Save .elsew`, `Export PNG`. The bar is a drag region on macOS with `padding-left: 82px` for traffic lights.
+- Workspace `210px 1fr 270px`: sidebar, canvas, inspector. Explore hides the sidebar and inspector.
+- Canvas: blue-gray `#eef1f1`, 22px dot grid, 1px inner rule, world layer `1100 × 680`, initially 90% and centered.
+- Sidebar: three create cards with icon, name, subtitle, and `+`; bottom `Search world…` and `All Elements` with base-node count.
+- Inspector: type eyebrow, serif title, Type select, Description, type-specific fields (Element icon / Space / image / tags; Space background / children), and Delete. Relation inspector replaces it when a relation is selected.
+- Bottom world-time strip: `WORLD TIME 1/3` through `3/3`; up to three snapshot buttons, a rename input, delete, and add.
+- Right-click create menu and All Elements drawer float above the canvas; the drawer sits above the timeline.
+- ≤980px: sidebar hides, toolbar gets Quick add, inspector becomes a bottom sheet with a close button; ≤640px: quick-add palette.
 
 ### Node geometry
 
 | Type | Default size | Resizable |
 | --- | --- | --- |
-| Place | 560 × 360 | yes |
-| Category | 480 × 300 | yes |
-| Map | 178 × 116 | no |
-| Building | 164 × 112 | no |
+| Space | 560 × 360 | yes |
+| Element | 150 × 72 | no |
 | Event | 174 × 46 | no |
-| Timeline | 190 × 52 | no |
-| Faction | 154 × 88 | no |
-| Concept | 154 × 42 | no |
-| Culture | 152 × 76 | no |
 | Image | 150 × 108 | no |
-| System | 146 × 88 | no |
-| Species | 118 × 94 | no |
-| Object | 112 × 82 | no |
-| Character | 104 × 104 | no |
+| Legacy Place | 560 × 360 | yes |
+| Legacy Category | 480 × 300 | yes |
+| Legacy Character | 104 × 104 | no |
+| Legacy Faction | 154 × 88 | no |
+| Legacy other types | per `NODE_TYPE_META` | no |
 
-- Place/Category use a header strip with a 1px divider; child nodes are independently positioned and z-ordered above the container.
-- Character uses a centered portrait-ish layout: icon tile at top, name and type below.
-- Faction and other medium cards use a 24px icon tile on the left, title and type at the right.
-- Image is a placeholder shape with a diagonal and a dot, intentionally not a real image upload in v0.1.0.
-- Relation ports are 7px circles centered on the left/right edges; they appear on hover and while connecting.
-- Relation curves are cubic Béziers with horizontal control points, dashed `4 4`, 1px `#9da6a4`, and a small ivory label background.
+- Space has a title chip, blue-gray background, and child nodes rendered above it. Moving a Space moves its children; deleting a Space deletes them.
+- Element is a horizontal card with a 32px icon tile, serif title, and `ELEMENT` micro-label. The icon can be character, faction, concept, or object.
+- Event is a narrow warm card with an iconic tile, title, and type label, used as a moment in time.
+- Image renders the uploaded data URL; without one it shows a choose-image placeholder.
+- Relation ports are 7px circles centered on left/right edges; they appear on hover and while connecting.
+- Relation curves are cubic Béziers with horizontal control points, dashed, 1px `#9da6a4`, and a small ivory label background. SVG paths carry inline fallback attributes so PNG export keeps the stroke.
 
 ## Motion
 
@@ -114,11 +130,12 @@ No web fonts are loaded. Georgia and the system UI font are always available off
 ## Intentional deviations
 
 1. **World rename** — prototype shows a modal-style rename; the implementation uses an inline toolbar input opened by the `⌄` button or double-clicking the title. Same outcome, fewer layers.
-2. **Create menu** — prototype opens a centered modal in some states; the implementation keeps creation in the left rail and adds a Quick add popover for narrow layouts and `N`.
+2. **Create menu** — the prototype shows a right-click menu; the implementation keeps it for the canvas and adds a Quick add popover for narrow layouts and `N`.
 3. **Title editing** — double-click on the canvas title matches the prototype; the inspector title is a single click. Single-click on the toolbar world name does not enter edit mode (only the chevron / double-click does) to avoid accidental renames when selecting the window.
-4. **Mobile** — the prototype's responsive behavior is frozen as a CSS reference; the Tauri window minimum is 1040px, so the narrow layout is exercised in browser/Playwright only in v0.1.0.
-5. **Explore panel** — the implementation keeps a floating card with the type eyebrow, serif title, description, alias mark, and coordinates; the close button is explicit instead of click-outside only.
-6. **No external assets** — the prototype used a remote font/icon setup; Elsewhere uses system fonts and inline SVG so it works fully offline and inside the Tauri CSP.
+4. **Mobile** — the prototype's responsive behavior is frozen as a CSS reference; the Tauri window minimum is 1040px, so the narrow layout is exercised in browser/Playwright only.
+5. **Explore panel** — the implementation keeps a floating card with the image, type eyebrow, serif title, description, parent Space, tags, and coordinates; the close button is explicit.
+6. **Image nodes** — the prototype exported nonfunctional image dialogs; Elsewhere stores the image data URL in `.elsew` and includes it in PNG export.
+7. **No external assets** — the prototype used a remote font/icon setup; Elsewhere uses system fonts and inline SVG so it works fully offline and inside the Tauri CSP.
 
 ## Fidelity checks
 
@@ -126,9 +143,9 @@ The implementation was compared against the prototype at 1440×900:
 
 - home headline line breaks and column rhythm;
 - toolbar order, heights, and spacing;
-- sidebar group labels, row heights, and 14 item order;
+- three create cards, sidebar search, and All Elements drawer;
 - canvas dot spacing (22px) and world bounds;
-- node shapes and default footprints;
+- Space / Element / Event shapes and world-time strip;
 - inspector typography and section order;
 - relation label placement and curve weight;
 - Explore chrome removal and panel proportions.

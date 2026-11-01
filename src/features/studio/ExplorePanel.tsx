@@ -12,6 +12,10 @@ export function ExplorePanel({ world, node, onClose }: ExplorePanelProps) {
   const alias = node.sourceId !== undefined;
   const source = alias ? world.nodes.find((entry) => entry.id === node.sourceId) : null;
   const instances = alias && node.sourceId ? aliasesOf(world, node.sourceId).length + 1 : 1;
+  const parent =
+    node.parentId !== undefined
+      ? world.nodes.find((entry) => entry.id === node.parentId)
+      : undefined;
   return (
     <aside className="explore-panel" aria-label="Node details">
       <button
@@ -22,10 +26,18 @@ export function ExplorePanel({ world, node, onClose }: ExplorePanelProps) {
       >
         <Icon name="close" size={15} />
       </button>
-      <div className="explore-visual">
-        <span className={`node-symbol ${node.type.toLowerCase()}`}>
-          <TypeIcon type={node.type} size={26} />
-        </span>
+      <div className={`explore-visual ${node.type.toLowerCase()}`}>
+        {node.imageSrc ? (
+          <img src={node.imageSrc} alt="" />
+        ) : (
+          <span className={`node-symbol ${node.type.toLowerCase()}`}>
+            {node.type === 'Element' ? (
+              <Icon name={node.icon ?? 'character'} size={26} />
+            ) : (
+              <TypeIcon type={node.type} size={26} />
+            )}
+          </span>
+        )}
       </div>
       <span className="eyebrow">
         {node.type}
@@ -33,6 +45,14 @@ export function ExplorePanel({ world, node, onClose }: ExplorePanelProps) {
       </span>
       <h2>{node.title}</h2>
       <p>{node.description.trim() || 'No note has been written for this part of the world yet.'}</p>
+      {parent && <small className="explore-source">Inside {parent.title}</small>}
+      {node.tags && node.tags.length > 0 && (
+        <div className="explore-tags">
+          {node.tags.map((tag) => (
+            <span key={tag}>#{tag}</span>
+          ))}
+        </div>
+      )}
       {source && (
         <small className="explore-source">
           Alias of {source.title}

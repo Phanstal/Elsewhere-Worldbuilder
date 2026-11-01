@@ -5,7 +5,13 @@ import {
   parseElsew,
   serializeElsew,
 } from '../../src/domain/elsew';
-import { addNode, createAlias, createWorld } from '../../src/domain/world';
+import {
+  addNode,
+  createAlias,
+  createWorld,
+  syncActiveSnapshot,
+  updateNode,
+} from '../../src/domain/world';
 
 function prototypeFile() {
   return JSON.stringify({
@@ -59,6 +65,63 @@ describe('elsew file format', () => {
     expect(parsed.nodes).toHaveLength(2);
     expect(parsed.nodes[1].sourceId).toBe(added.node.id);
     expect(serializeElsew(parsed)).toContain('"format": "elsew"');
+  });
+
+  it('round-trips v2 nodes, tags, parents and time snapshots', () => {
+    let world = addNode(createWorld('Many Times'), 'Space', { x: 500, y: 340 }).world;
+    const spaceId = world.nodes[0].id;
+    world = updateNode(world, spaceId, (node) => ({
+      ...node,
+      backgroundColor: '#e6edf0',
+      description: 'A valley at the edge of the map.',
+    }));
+    const element = addNode(world, 'Element', { x: 480, y: 320 });
+    world = updateNode(element.world, element.node.id, (node) => ({
+      ...node,
+      icon: 'faction',
+      parentId: spaceId,
+      tags: ['old-roads', 'keepers'],
+    }));
+    world = syncActiveSnapshot(world);
+    const origin = world.snapshots![0];
+    world = {
+      ...world,
+      snapshots: [
+        origin,
+        {
+          id: 'time-2',
+          label: 'Later',
+          nodes: structuredClone(world.nodes),
+          relations: [],
+        },
+      ],
+      activeSnapshotId: 'time-2',
+    };
+    world = syncActiveSnapshot(world);
+
+    const parsed = parseElsew(serializeElsew(world));
+    expect(parsed.nodes).toHaveLength(2);
+    expect(parsed.nodes[0]).toMatchObject({
+      type: 'Space',
+      backgroundColor: '#e6edf0',
+    });
+    expect(parsed.nodes[1]).toMatchObject({
+      type: 'Element',
+      icon: 'faction',
+      parentId: spaceId,
+      tags: ['old-roads', 'keepers'],
+    });
+    expect(parsed.activeSnapshotId).toBe('time-2');
+    expect(parsed.snapshots?.map((snapshot) => snapshot.label)).toEqual(['Origin', 'Later']);
+    expect(parsed.snapshots?.[1].nodes).toHaveLength(2);
+  });
+
+  it('gives legacy files an Origin snapshot on import', () => {
+    const parsed = parseElsew(prototypeFile());
+    expect(parsed.snapshots).toHaveLength(1);
+    expect(parsed.snapshots?.[0].label).toBe('Origin');
+    expect(parsed.snapshots?.[0].nodes).toHaveLength(2);
+    expect(parsed.activeSnapshotId).toBe(parsed.snapshots?.[0].id);
   });
 
   it('reads the prototype file, including aliases and relations', () => {

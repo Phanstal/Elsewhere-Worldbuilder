@@ -3,7 +3,7 @@ import type { World } from '../../domain/types';
 import { filenameForWorld, worldBounds } from '../../domain/world';
 import { dataUrlToBytes, saveBinaryFile } from './save';
 
-const CANVAS_COLOR = '#f0efe9';
+const CANVAS_COLOR = '#eef1f1';
 
 export async function renderWorldPng(worldEl: HTMLElement, world: World): Promise<string> {
   await document.fonts.ready;
@@ -12,6 +12,7 @@ export async function renderWorldPng(worldEl: HTMLElement, world: World): Promis
   const height = Math.max(320, Math.ceil(bounds.height));
 
   const stage = document.createElement('div');
+  stage.className = 'studio-v2';
   stage.setAttribute('aria-hidden', 'true');
   Object.assign(stage.style, {
     position: 'fixed',
@@ -21,7 +22,7 @@ export async function renderWorldPng(worldEl: HTMLElement, world: World): Promis
     height: `${height}px`,
     overflow: 'hidden',
     background: CANVAS_COLOR,
-    backgroundImage: 'radial-gradient(rgba(207, 208, 202, 0.9) 0.75px, transparent 0.75px)',
+    backgroundImage: 'radial-gradient(rgba(118, 135, 140, 0.24) 0.7px, transparent 0.8px)',
     backgroundSize: '22px 22px',
     pointerEvents: 'none',
     zIndex: '-1',
@@ -30,7 +31,7 @@ export async function renderWorldPng(worldEl: HTMLElement, world: World): Promis
   const clone = worldEl.cloneNode(true) as HTMLElement;
   clone.querySelectorAll('.selected').forEach((element) => element.classList.remove('selected'));
   clone
-    .querySelectorAll('.relation-port, .resize-handle, .relation-name-input')
+    .querySelectorAll('.relation-port, .resize-handle, .relation-name-input, .canvas-create-menu')
     .forEach((element) => element.remove());
   Object.assign(clone.style, {
     position: 'absolute',
