@@ -21,9 +21,9 @@
 - `cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check`：通过
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`：通过
 - `cargo test --manifest-path src-tauri/Cargo.toml`：通过
-- GitHub Actions CI：待 v0.1.3 推送后补记
-- GitHub Actions macOS Release：待 tag 推送后补记
-- 发布产物校验值：待发布后补记
+- GitHub Actions CI（commit `f8d3f0c`，run [`41400219886`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/41400219886)）：前端 lint / format / typecheck / 23 个单测 / build / 11 个 E2E，Rust fmt / clippy / test 全部通过
+- GitHub Actions macOS Release（tag `v0.1.3`，run [`41400476942`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/41400476942)）：universal `.app` 构建、ad-hoc 签名、双架构校验、DMG / ZIP / checksum 打包、Release 发布全部通过
+- 发布产物：DMG 10,321,780 bytes，SHA-256 `718e63412f38e8e4f106bbce12fbbb219ceeed9c58dd627e85fa3173d5ad1f70`；ZIP 9,312,576 bytes，SHA-256 `e53d00888b7c5cf32e21dc6fdab5fb78481af3846c616b3937f4c95ba200949f`（与 `SHA256SUMS.txt` 及 GitHub asset digest 一致）
 
 > Playwright 验证的是浏览器 localStorage 适配器；SQLite、原生菜单、窗口和 DMG 仍需按下面的真机步骤验收。
 
