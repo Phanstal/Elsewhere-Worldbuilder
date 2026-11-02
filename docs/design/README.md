@@ -10,7 +10,7 @@ This folder is the frozen visual contract for Elsewhere. The app is a hand-built
 - `prototype-home-full.png` + `prototype-home-full.html` — the frozen home screen reference
 - `prototype-studio.png`, `prototype-timeline.png` — frozen Version 33 studio and world-time references
 - `prototype-world.elsew.json` — a world exported from the prototype; used to verify `.elsew` compatibility
-- `app-home-world.png`, `app-studio-full.png`, `app-explore-full.png` — final v0.1.2 implementation screenshots at 1440×900 / 2× (CSS pixels 1440×900)
+- `app-home-world.png`, `app-studio-full.png`, `app-explore-full.png` — final implementation screenshots at 1440×900 / 2× (CSS pixels 1440×900)
 - `icon-source.png` — source artwork for the app icon; the `.icns` / `.ico` / PNG set is generated with `npx tauri icon docs/design/icon-source.png`
 
 Figma Make files cannot be opened through the Figma MCP server (`create_session` rejects them), so the prototype was inspected in a browser and its CSS and markup were copied into this folder rather than fetched through MCP.
@@ -89,7 +89,7 @@ No web fonts are loaded. Georgia and the system UI font are always available off
 
 ### Studio (Version 33)
 
-- Toolbar 58px: brand block, world title, centered undo / redo / zoom / Fit, right-side save state, Create / Explore, `Save .elsew`, `Export PNG`. The bar is a drag region on macOS with `padding-left: 82px` for traffic lights.
+- Toolbar 58px: brand block, world title, centered undo / redo / zoom / Fit, right-side save state, Create / Explore, `Save .elsew`, `Export PNG`. On macOS the native title bar (transparent, title hidden) sits above the web content; the toolbar does not reserve traffic-light padding and is not a drag region.
 - Workspace `210px 1fr 270px`: sidebar, canvas, inspector. Explore hides the sidebar and inspector.
 - Canvas: blue-gray `#eef1f1`, 22px dot grid, 1px inner rule, world layer `1100 × 680`, initially 90% and centered.
 - Sidebar: three create cards with icon, name, subtitle, and `+`; bottom `Search world…` and `All Elements` with base-node count.
@@ -97,6 +97,7 @@ No web fonts are loaded. Georgia and the system UI font are always available off
 - Bottom world-time strip: `WORLD TIME 1/3` through `3/3`; up to three snapshot buttons, a rename input, delete, and add.
 - Right-click create menu and All Elements drawer float above the canvas; the drawer sits above the timeline.
 - ≤980px: sidebar hides, toolbar gets Quick add, inspector becomes a bottom sheet with a close button; ≤640px: quick-add palette.
+- The browser screenshots in this folder show the web content only; the macOS native title bar is outside the web view after the v0.1.3 drag fix.
 
 ### Node geometry
 
@@ -151,3 +152,4 @@ The implementation was compared against the prototype at 1440×900:
 - Explore chrome removal and panel proportions.
 
 The final comparison screenshots live in this folder. If a visual change is intentional, update this document and recapture the final screenshots in the same change.
+

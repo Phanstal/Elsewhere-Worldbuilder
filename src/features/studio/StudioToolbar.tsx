@@ -68,13 +68,13 @@ export function StudioToolbar({
   };
 
   return (
-    <header className="toolbar" data-tauri-drag-region>
+    <header className="toolbar">
       <button type="button" className="brand" onClick={onBack} title="Back to archive">
         <span className="brand-mark">E</span>
         <span>Elsewhere</span>
       </button>
 
-      <div className="project" data-tauri-drag-region>
+      <div className="project">
         {editingTitle ? (
           <input
             ref={inputRef}

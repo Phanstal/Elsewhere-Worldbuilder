@@ -23,7 +23,7 @@
 }
 
 .studio-v2 .project {
-  left: calc(190px + var(--titlebar-inset));
+  left: 190px;
   gap: 7px;
   padding-left: 18px;
   border-left: 1px solid #dfe2dd;

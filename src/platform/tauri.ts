@@ -2,12 +2,6 @@ export function isTauri(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 }
 
-export function markPlatform(): void {
-  if (typeof document === 'undefined') return;
-  const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-  document.documentElement.dataset.platform = isMac ? 'macos' : 'other';
-}
-
 export async function invokeCommand<T>(
   command: string,
   args?: Record<string, unknown>,

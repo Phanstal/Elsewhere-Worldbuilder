@@ -11,7 +11,7 @@ Elsewhere 是一个单窗口、本地优先的 macOS 世界观构建工具：
 - 以 `.elsew` JSON 文件导入 / 导出，可导出整张世界为 PNG；
 - 以**未签名、未公证**的 `.app` / `.dmg` 形式个人分发；
 - 当前在 Windows 上开发，通过 GitHub Actions 的 macOS runner 产出 macOS 构建，最终由用户在真机验收；
-- 当前版本 v0.1.2，对应 Figma Make **Version 33** 设计；
+- 当前版本 v0.1.3，对应 Figma Make **Version 33** 设计；
 - 为未来的 iOS / Android 版本保留同一套领域模型和存储端口，不把业务逻辑绑死在桌面壳上。
 
 原型来自 [Figma Make](https://www.figma.com/make/aeRRMdDfVsyuJvz2Dy1DV3/Build-Elsewhere-Worldbuilding-Studio?t=Y0SPn1WcqeAIuBMw-1)。Figma MCP 不支持 Make 文件，因此视觉契约以冻结在 `docs/design/` 的原型 CSS、导出的 `.elsew` 样例和截图为依据，而不是接入 Figma MCP。
@@ -292,9 +292,10 @@ macOS 数据位置：
 - `menu.rs`：macOS 菜单 `Elsewhere / File / Edit / View / Window`，菜单项通过 `elsewhere://command` 事件把命令发给前端；
 - `commands.rs`：`save_export(path, bytesBase64)` 写入用户选择的路径，并返回结果；
 - 插件：`dialog`、`sql`、`window-state`；
-- `tauri.conf.json`：1440×900，最小 1040×680，macOS overlay titlebar + hidden title，红绿灯位置 `18, 21`；
+- `tauri.conf.json`：1440×900，最小 1040×680，macOS `titleBarStyle: "Transparent"` + `hiddenTitle: true`，窗口背景 `#fcfcfa`；网页内容从原生标题栏下方开始，拖动由 AppKit 原生标题栏处理，不在前端设置 drag region；
 - `capabilities/default.json` 只开放实际使用的 core / dialog / sql 权限；
-- 前端 `platform/tauri.ts` 封装 `isTauri`、`invokeCommand`、`listenForMenuCommands`，浏览器模式返回空实现。
+- 前端 `platform/tauri.ts` 封装 `isTauri`、`invokeCommand`、`listenForMenuCommands`，浏览器模式返回空实现；
+- 不设置 `data-tauri-drag-region` / `-webkit-app-region`。`Overlay` 会启用 full-size content view，WKWebView 盖住标题栏，导致窗口激活后拖动失效（tauri-apps/tauri#15623）；`Transparent` 保留标准 content frame，激活状态不影响原生拖动。
 
 菜单命令：
 
@@ -326,7 +327,7 @@ macOS 数据位置：
 
 - **单元测试**：23 个用例，覆盖创建、移动容器子节点、别名、关系、计数、边界、fitView、快照切换、容器包含关系、v2 字段与快照序列化、旧文件补 `Origin`、合法 / 非法导入；
 - **E2E**：11 个用例，覆盖创建世界、编辑并刷新回读、改名、别名、连线与关系改名、`.elsew` / PNG 下载、导入、Explore、缩放把手、时间快照、删除世界、窄屏 Quick add；
-- **原生验证**：在 Windows 上用 WebView2 CDP 连接真实 Tauri 窗口，新建 / 改名 / 自动保存，再直接查询 `elsewhere.db` 验证 SQLite 数据；macOS 的菜单、overlay titlebar、保存对话框由真机验收覆盖；
+- **原生验证**：在 Windows 上用 WebView2 CDP 连接真实 Tauri 窗口，新建 / 改名 / 自动保存，再直接查询 `elsewhere.db` 验证 SQLite 数据；macOS 的菜单、原生透明标题栏拖动、保存对话框由真机验收覆盖；
 - **CI**：Ubuntu 跑前端与 Playwright（Chromium），macOS 跑 rustfmt / clippy / cargo test，并打 universal `.app`。
 
 ## 11. 已知限制与取舍

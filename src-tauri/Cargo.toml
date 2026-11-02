@@ -1,6 +1,6 @@
 [package]
 name = "elsewhere"
-version = "0.1.2"
+version = "0.1.3"
 description = "A spatial studio for building and exploring fictional worlds."
 authors = ["Phanstal"]
 edition = "2021"

@@ -1,16 +1,16 @@
-# Elsewhere 验收清单（v0.1.2）
+# Elsewhere 验收清单（v0.1.3）
 
 ## 0. 构建信息
 
 | 项目 | 值                                                                   |
 | ---- | -------------------------------------------------------------------- |
-| 版本 | v0.1.2                                                               |
+| 版本 | v0.1.3                                                               |
 | 平台 | macOS 12+，universal（arm64 + x86_64）                               |
-| 产物 | `Elsewhere_0.1.2_universal.dmg`、`.zip`、`.sha256`、`SHA256SUMS.txt` |
+| 产物 | `Elsewhere_0.1.3_universal.dmg`、`.zip`、`.sha256`、`SHA256SUMS.txt` |
 | 签名 | ad-hoc（未使用 Apple Developer ID，未公证）                          |
 | 仓库 | https://github.com/Phanstal/Elsewhere-Worldbuilder                   |
 
-自动化状态（本地开发机，2026-11-01；GitHub Actions 结果在发布后补记）：
+自动化状态（本地开发机，2026-11-02；GitHub Actions 结果在发布后补记）：
 
 - `npm run lint`：通过
 - `npm run format:check`：通过
@@ -21,21 +21,26 @@
 - `cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check`：通过
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`：通过
 - `cargo test --manifest-path src-tauri/Cargo.toml`：通过
-- GitHub Actions CI（commit `a4680b2`，run [`41303898155`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/41303898155)）：前端 lint / format / typecheck / 23 个单测 / build / 11 个 E2E，Rust fmt / clippy / test 全部通过
-- GitHub Actions macOS Release（tag `v0.1.2`，run [`41304028132`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/41304028132)）：universal `.app` 构建、ad-hoc 签名、双架构校验、DMG / ZIP / checksum 打包、Release 发布全部通过
-- 已下载并校验发布产物：DMG 10,322,603 bytes，SHA-256 `3b071ff84d619fe12f913659cf0800cb5eb076a16838a81eb07895bd133e1fc8`；ZIP 9,312,644 bytes，SHA-256 `1eb323d0b62e2b2f62041aa0221922186d0ef1c41dfda0bb4202b1773acd25dc`。`Info.plist` 版本 `0.1.2`、`LSMinimumSystemVersion 12.0`；Mach-O fat binary 含 x86_64 与 arm64
+- GitHub Actions CI：待 v0.1.3 推送后补记
+- GitHub Actions macOS Release：待 tag 推送后补记
+- 发布产物校验值：待发布后补记
 
 > Playwright 验证的是浏览器 localStorage 适配器；SQLite、原生菜单、窗口和 DMG 仍需按下面的真机步骤验收。
 
 ## 1. 下载与安装
 
-- [ ] 从 Releases 下载 `Elsewhere_0.1.2_universal.dmg`、`.zip` 与 `SHA256SUMS.txt`。
-- [ ] 校验：`shasum -a 256 -c Elsewhere_0.1.2_universal.dmg.sha256`，结果为 `OK`。
+- [ ] 从 Releases 下载 `Elsewhere_0.1.3_universal.dmg`、`.zip` 与 `SHA256SUMS.txt`。
+- [ ] 校验：`shasum -a 256 -c Elsewhere_0.1.3_universal.dmg.sha256`，结果为 `OK`。
 - [ ] 打开 DMG，把 `Elsewhere.app` 拖入 `/Applications`。
 - [ ] 首次启动：右键 → 打开 → 打开；或在“系统设置 → 隐私与安全性”里选择“仍要打开”。
 - [ ] 若提示“已损坏”，执行 `xattr -dr com.apple.quarantine /Applications/Elsewhere.app` 后重开。
-- [ ] 确认应用图标、应用名、窗口标题均为 Elsewhere；窗口默认 1440×900，最小 1040×680。
-- [ ] 确认窗口使用 overlay 标题栏：红绿灯位于左上角，不遮挡品牌字标；顶部工具栏空白处可拖动窗口。
+- [ ] 确认应用图标、应用名均为 Elsewhere；窗口默认 1440×900，最小 1040×680。
+- [ ] 确认使用**原生透明标题栏**：标题栏不显示标题文字，只有左上角红绿灯；网页内容从标题栏下方开始。
+- [ ] 确认窗口背景为 `#fcfcfa`，标题栏与纸张表面没有突兀色差。
+- [ ] 确认品牌字标和工具栏从左侧正常内边距开始，不再为红绿灯预留约 82px 空白。
+- [ ] **窗口已激活时**，按住原生标题栏空白处即可拖动窗口，不会出现“点击但拖不动”。
+- [ ] **窗口未激活时**，第一次按住标题栏即可同时激活并拖动窗口，行为与已激活时一致。
+- [ ] 按住工具栏、首页头部等网页区域不会触发原生窗口拖动；这是预期行为，拖动统一交给标题栏。
 
 ## 2. 世界档案
 
@@ -150,8 +155,8 @@
 - [ ] `File → Export Image (PNG)…`（`⇧⌘P`）打开保存对话框。
 - [ ] `Edit` 菜单的 Undo / Redo / Cut / Copy / Paste / Select All 可用；标题或描述输入框中剪切/粘贴正常。
 - [ ] `View → Zoom In / Zoom Out`、`Fit Canvas`（`⌘0`）、`Toggle Explore Mode`（`⇧⌘O`）、`Toggle Full Screen` 均可用。
-- [ ] 全屏下红绿灯与工具栏不重叠；退出全屏后窗口尺寸恢复。
-- [ ] 窗口拖动、最小化、关闭正常；重新打开后窗口尺寸与位置恢复。
+- [ ] 全屏下内容不压住红绿灯；退出全屏后窗口尺寸与标题栏恢复。
+- [ ] 窗口拖动、最小化、缩放、关闭正常；重新打开后窗口尺寸与位置恢复。
 - [ ] 关闭窗口前未保存的修改会被 flush；重开后内容一致（强杀进程除外）。
 
 ## 12. 窄屏布局（开发 / Web 预览）
@@ -174,7 +179,7 @@ macOS 应用最小宽度为 1040，以下用浏览器 `npm run dev` 或 Playwrig
 - [ ] 至少 50 个世界、单个世界 100 个节点时，首页滚动与画布拖动仍可用。
 - [ ] 应用退出后不残留后台进程。
 
-## 14. 已知限制（v0.1.2 接受）
+## 14. 已知限制（v0.1.3 接受）
 
 - 无 Apple 签名 / 公证，首次启动需要手动放行；每次新版本可能重复。
 - 无自动更新、云同步、账号、协作、版本历史（仅会话内撤销 / 重做）。

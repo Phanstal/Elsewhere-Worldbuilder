@@ -6,7 +6,6 @@
   --canvas: #f0efe9;
   --selected: #e3ecf4;
   --muted: #858984;
-  --titlebar-inset: 0px;
   --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
   --serif: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
   --mono: ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
@@ -75,10 +74,6 @@ svg {
 :focus-visible {
   outline: 2px solid rgba(138, 169, 199, 0.8);
   outline-offset: 2px;
-}
-
-[data-platform='macos'] {
-  --titlebar-inset: 82px;
 }
 
 .boot-screen {
@@ -182,7 +177,7 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 34px 0 calc(34px + var(--titlebar-inset));
+  padding: 0 34px;
   border-bottom: 1px solid #dedfd9;
   background: rgba(246, 245, 240, 0.76);
 }
@@ -517,7 +512,7 @@ kbd {
   display: grid;
   grid-template-columns: 215px 1fr auto;
   align-items: center;
-  padding: 0 16px 0 calc(19px + var(--titlebar-inset));
+  padding: 0 16px 0 19px;
   border-bottom: 1px solid var(--line);
   background: rgba(246, 245, 240, 0.96);
 }
@@ -529,7 +524,7 @@ kbd {
 .project {
   position: absolute;
   top: 0;
-  left: calc(190px + var(--titlebar-inset));
+  left: 190px;
   height: 58px;
   display: flex;
   align-items: center;
@@ -2461,7 +2456,7 @@ kbd {
 @media (max-width: 980px) {
   .toolbar {
     grid-template-columns: auto 1fr auto;
-    padding-left: calc(14px + var(--titlebar-inset));
+    padding-left: 14px;
     padding-right: 12px;
   }
 
@@ -2559,7 +2554,7 @@ kbd {
   }
 
   .home-header {
-    padding: 0 24px 0 calc(24px + var(--titlebar-inset));
+    padding: 0 24px;
   }
 
   .home-tagline {

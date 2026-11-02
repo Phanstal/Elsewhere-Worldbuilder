@@ -30,7 +30,7 @@ export function HomeView({ worlds, loading, onCreate, onOpen, onDelete, onImport
 
   return (
     <div className="home-screen">
-      <header className="home-header" data-tauri-drag-region>
+      <header className="home-header">
         <div className="brand">
           <span className="brand-mark">E</span>
           <span className="brand-word">Elsewhere</span>

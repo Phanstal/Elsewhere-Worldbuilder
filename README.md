@@ -14,14 +14,14 @@ Built with Tauri 2, React, TypeScript, and SQLite. No accounts, no cloud, no tel
 
 Download the latest universal build for macOS 12 or newer (Apple Silicon and Intel) from [Releases](https://github.com/Phanstal/Elsewhere-Worldbuilder/releases/latest):
 
-- `Elsewhere_0.1.2_universal.dmg`
-- `Elsewhere_0.1.2_universal.zip`
+- `Elsewhere_0.1.3_universal.dmg`
+- `Elsewhere_0.1.3_universal.zip`
 - `SHA256SUMS.txt`
 
 Verify the download before opening it:
 
 ```sh
-shasum -a 256 -c Elsewhere_0.1.2_universal.dmg.sha256
+shasum -a 256 -c Elsewhere_0.1.3_universal.dmg.sha256
 ```
 
 ### First launch
@@ -52,6 +52,7 @@ Because every build is ad-hoc signed rather than notarized, you may need to repe
 - **Autosave**: changes land in a local SQLite database after a short debounce, with `Saving…` / `Saved` feedback. Undo and redo are available from the toolbar and `⌘Z` / `⇧⌘Z`.
 - **`.elsew` files**: a readable, versioned JSON format. Save the current world, or import a world as a new entry in the archive; imports never overwrite existing worlds. v0.1.0 files open with an `Origin` snapshot.
 - **PNG export**: render the whole world, including the dot grid, spaces, and relation lines, at 2× resolution through a native save dialog.
+- **Native macOS shell**: a transparent native title bar with the standard traffic lights and menus, drag-to-move from the system title bar, `⌘N` / `⌘S` / `⇧⌘E` / `⇧⌘P` / `⇧⌘O`, and window-state restore.
 - **Example world**: [samples/the-hollow-reach.elsew](samples/the-hollow-reach.elsew) is the world in the screenshots. Import it from the archive to try the app.
 
 ## Keyboard and trackpad
