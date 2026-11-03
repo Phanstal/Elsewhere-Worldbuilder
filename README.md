@@ -14,14 +14,14 @@ Built with Tauri 2, React, TypeScript, and SQLite. No accounts, no cloud, no tel
 
 Download the latest universal build for macOS 12 or newer (Apple Silicon and Intel) from [Releases](https://github.com/Phanstal/Elsewhere-Worldbuilder/releases/latest):
 
-- `Elsewhere_0.1.3_universal.dmg`
-- `Elsewhere_0.1.3_universal.zip`
+- `Elsewhere_0.1.4_universal.dmg`
+- `Elsewhere_0.1.4_universal.zip`
 - `SHA256SUMS.txt`
 
 Verify the download before opening it:
 
 ```sh
-shasum -a 256 -c Elsewhere_0.1.3_universal.dmg.sha256
+shasum -a 256 -c Elsewhere_0.1.4_universal.dmg.sha256
 ```
 
 ### First launch

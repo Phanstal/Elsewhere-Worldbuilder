@@ -11,7 +11,7 @@ This folder is the frozen visual contract for Elsewhere. The app is a hand-built
 - `prototype-studio.png`, `prototype-timeline.png` — frozen Version 33 studio and world-time references
 - `prototype-world.elsew.json` — a world exported from the prototype; used to verify `.elsew` compatibility
 - `app-home-world.png`, `app-studio-full.png`, `app-explore-full.png` — final implementation screenshots at 1440×900 / 2× (CSS pixels 1440×900)
-- `icon-source.png` — source artwork for the app icon; the `.icns` / `.ico` / PNG set is generated with `npx tauri icon docs/design/icon-source.png`
+- `icon-source.png` — source artwork for the app icon (ivory squircle, thin ring, italic serif E); the `.icns` / `.ico` / PNG set is generated with `npx tauri icon docs/design/icon-source.png`
 
 Figma Make files cannot be opened through the Figma MCP server (`create_session` rejects them), so the prototype was inspected in a browser and its CSS and markup were copied into this folder rather than fetched through MCP.
 

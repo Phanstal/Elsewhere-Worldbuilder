@@ -11,7 +11,7 @@ Elsewhere 是一个单窗口、本地优先的 macOS 世界观构建工具：
 - 以 `.elsew` JSON 文件导入 / 导出，可导出整张世界为 PNG；
 - 以**未签名、未公证**的 `.app` / `.dmg` 形式个人分发；
 - 当前在 Windows 上开发，通过 GitHub Actions 的 macOS runner 产出 macOS 构建，最终由用户在真机验收；
-- 当前版本 v0.1.3，对应 Figma Make **Version 33** 设计；
+- 当前版本 v0.1.4，对应 Figma Make **Version 33** 设计；
 - 为未来的 iOS / Android 版本保留同一套领域模型和存储端口，不把业务逻辑绑死在桌面壳上。
 
 原型来自 [Figma Make](https://www.figma.com/make/aeRRMdDfVsyuJvz2Dy1DV3/Build-Elsewhere-Worldbuilding-Studio?t=Y0SPn1WcqeAIuBMw-1)。Figma MCP 不支持 Make 文件，因此视觉契约以冻结在 `docs/design/` 的原型 CSS、导出的 `.elsew` 样例和截图为依据，而不是接入 Figma MCP。

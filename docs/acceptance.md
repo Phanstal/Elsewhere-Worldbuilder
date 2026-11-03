@@ -1,16 +1,16 @@
-# Elsewhere 验收清单（v0.1.3）
+# Elsewhere 验收清单（v0.1.4）
 
 ## 0. 构建信息
 
 | 项目 | 值                                                                   |
 | ---- | -------------------------------------------------------------------- |
-| 版本 | v0.1.3                                                               |
+| 版本 | v0.1.4                                                               |
 | 平台 | macOS 12+，universal（arm64 + x86_64）                               |
-| 产物 | `Elsewhere_0.1.3_universal.dmg`、`.zip`、`.sha256`、`SHA256SUMS.txt` |
+| 产物 | `Elsewhere_0.1.4_universal.dmg`、`.zip`、`.sha256`、`SHA256SUMS.txt` |
 | 签名 | ad-hoc（未使用 Apple Developer ID，未公证）                          |
 | 仓库 | https://github.com/Phanstal/Elsewhere-Worldbuilder                   |
 
-自动化状态（本地开发机，2026-11-02；GitHub Actions 结果在发布后补记）：
+自动化状态（本地开发机，2026-11-03；GitHub Actions 结果在发布后补记）：
 
 - `npm run lint`：通过
 - `npm run format:check`：通过
@@ -21,20 +21,21 @@
 - `cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check`：通过
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`：通过
 - `cargo test --manifest-path src-tauri/Cargo.toml`：通过
-- GitHub Actions CI（commit `f8d3f0c`，run [`41400219886`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/41400219886)）：前端 lint / format / typecheck / 23 个单测 / build / 11 个 E2E，Rust fmt / clippy / test 全部通过
-- GitHub Actions macOS Release（tag `v0.1.3`，run [`41400476942`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/41400476942)）：universal `.app` 构建、ad-hoc 签名、双架构校验、DMG / ZIP / checksum 打包、Release 发布全部通过
-- 发布产物：DMG 10,321,780 bytes，SHA-256 `718e63412f38e8e4f106bbce12fbbb219ceeed9c58dd627e85fa3173d5ad1f70`；ZIP 9,312,576 bytes，SHA-256 `e53d00888b7c5cf32e21dc6fdab5fb78481af3846c616b3937f4c95ba200949f`（与 `SHA256SUMS.txt` 及 GitHub asset digest 一致）
+- GitHub Actions CI：待 v0.1.4 推送后补记
+- GitHub Actions macOS Release：待 tag 推送后补记
+- 发布产物校验值：待发布后补记
 
 > Playwright 验证的是浏览器 localStorage 适配器；SQLite、原生菜单、窗口和 DMG 仍需按下面的真机步骤验收。
 
 ## 1. 下载与安装
 
-- [ ] 从 Releases 下载 `Elsewhere_0.1.3_universal.dmg`、`.zip` 与 `SHA256SUMS.txt`。
-- [ ] 校验：`shasum -a 256 -c Elsewhere_0.1.3_universal.dmg.sha256`，结果为 `OK`。
+- [ ] 从 Releases 下载 `Elsewhere_0.1.4_universal.dmg`、`.zip` 与 `SHA256SUMS.txt`。
+- [ ] 校验：`shasum -a 256 -c Elsewhere_0.1.4_universal.dmg.sha256`，结果为 `OK`。
 - [ ] 打开 DMG，把 `Elsewhere.app` 拖入 `/Applications`。
 - [ ] 首次启动：右键 → 打开 → 打开；或在“系统设置 → 隐私与安全性”里选择“仍要打开”。
 - [ ] 若提示“已损坏”，执行 `xattr -dr com.apple.quarantine /Applications/Elsewhere.app` 后重开。
 - [ ] 确认应用图标、应用名均为 Elsewhere；窗口默认 1440×900，最小 1040×680。
+- [ ] 确认 Dock / Finder 中显示**新的象牙白圆角图标**：细灰圆环、斜体衬线 `E`，不是旧版小图标；16 / 32 / 128 / 512px 下边缘清晰，无白底方块或黑边。
 - [ ] 确认使用**原生透明标题栏**：标题栏不显示标题文字，只有左上角红绿灯；网页内容从标题栏下方开始。
 - [ ] 确认窗口背景为 `#fcfcfa`，标题栏与纸张表面没有突兀色差。
 - [ ] 确认品牌字标和工具栏从左侧正常内边距开始，不再为红绿灯预留约 82px 空白。
@@ -179,7 +180,7 @@ macOS 应用最小宽度为 1040，以下用浏览器 `npm run dev` 或 Playwrig
 - [ ] 至少 50 个世界、单个世界 100 个节点时，首页滚动与画布拖动仍可用。
 - [ ] 应用退出后不残留后台进程。
 
-## 14. 已知限制（v0.1.3 接受）
+## 14. 已知限制（v0.1.4 接受）
 
 - 无 Apple 签名 / 公证，首次启动需要手动放行；每次新版本可能重复。
 - 无自动更新、云同步、账号、协作、版本历史（仅会话内撤销 / 重做）。
