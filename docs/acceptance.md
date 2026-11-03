@@ -12,8 +12,7 @@
 
 自动化状态（本地开发机，2026-11-03；GitHub Actions 结果在发布后补记）：
 
-- `npm run lint`：通过
-- `npm run format:check`：通过
+- `npx eslint src tests`：通过；`npx prettier --check` 对受版本控制的前端文件通过（工作区中未跟踪的 Figma 副本会触发全量扫描报错，CI 在干净检出上运行 `npm run lint` / `npm run format:check`）
 - `npm run typecheck`：通过
 - `npm test`：23 个单元测试通过
 - `npm run build`：通过
@@ -21,9 +20,9 @@
 - `cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check`：通过
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`：通过
 - `cargo test --manifest-path src-tauri/Cargo.toml`：通过
-- GitHub Actions CI：待 v0.1.4 推送后补记
-- GitHub Actions macOS Release：待 tag 推送后补记
-- 发布产物校验值：待发布后补记
+- GitHub Actions CI（commit `d600bd0`，run [`41572109768`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/41572109768)）：前端 lint / format / typecheck / 23 个单测 / build / 11 个 E2E，Rust fmt / clippy / test 全部通过
+- GitHub Actions macOS Release（tag `v0.1.4`，run [`41572366220`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/41572366220)）：universal `.app` 构建、ad-hoc 签名、双架构校验、DMG / ZIP / checksum 打包、Release 发布全部通过
+- 发布产物：DMG 10,567,928 bytes，SHA-256 `5ec1b6557edd6d04fc816ed6c3ba48e867c77da3080c9070bf60dee7343ae684`；ZIP 9,557,657 bytes，SHA-256 `8da8345281c2045192d27018a37f48a96993cb90038f24a7c407915444e8bdd0`（与 `SHA256SUMS.txt` 及 GitHub asset digest 一致）。已下载 ZIP 并校验：`Info.plist` 版本 `0.1.4`、`LSMinimumSystemVersion 12.0`，`icon.icns` 含 1024px 新图标且圆角透明，Mach-O fat binary 含 x86_64 与 arm64
 
 > Playwright 验证的是浏览器 localStorage 适配器；SQLite、原生菜单、窗口和 DMG 仍需按下面的真机步骤验收。
 
@@ -35,7 +34,7 @@
 - [ ] 首次启动：右键 → 打开 → 打开；或在“系统设置 → 隐私与安全性”里选择“仍要打开”。
 - [ ] 若提示“已损坏”，执行 `xattr -dr com.apple.quarantine /Applications/Elsewhere.app` 后重开。
 - [ ] 确认应用图标、应用名均为 Elsewhere；窗口默认 1440×900，最小 1040×680。
-- [ ] 确认 Dock / Finder 中显示**新的象牙白圆角图标**：细灰圆环、斜体衬线 `E`，不是旧版小图标；16 / 32 / 128 / 512px 下边缘清晰，无白底方块或黑边。
+- [ ] 确认 Dock / Finder 中显示**新的象牙白圆角图标**：细灰圆环、斜体衬线 `E`，不是旧版小图标；16 / 32 / 128 / 512px 下边缘清晰，无白底方块或黑边；圆角外为透明。
 - [ ] 确认使用**原生透明标题栏**：标题栏不显示标题文字，只有左上角红绿灯；网页内容从标题栏下方开始。
 - [ ] 确认窗口背景为 `#fcfcfa`，标题栏与纸张表面没有突兀色差。
 - [ ] 确认品牌字标和工具栏从左侧正常内边距开始，不再为红绿灯预留约 82px 空白。
