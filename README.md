@@ -14,14 +14,14 @@ Built with Tauri 2, React, TypeScript, and SQLite. No accounts, no cloud, no tel
 
 Download the latest universal build for macOS 12 or newer (Apple Silicon and Intel) from [Releases](https://github.com/Phanstal/Elsewhere-Worldbuilder/releases/latest):
 
-- `Elsewhere_0.1.4_universal.dmg`
-- `Elsewhere_0.1.4_universal.zip`
+- `Elsewhere_0.1.5_universal.dmg`
+- `Elsewhere_0.1.5_universal.zip`
 - `SHA256SUMS.txt`
 
 Verify the download before opening it:
 
 ```sh
-shasum -a 256 -c Elsewhere_0.1.4_universal.dmg.sha256
+shasum -a 256 -c Elsewhere_0.1.5_universal.dmg.sha256
 ```
 
 ### First launch
@@ -40,15 +40,15 @@ Because every build is ad-hoc signed rather than notarized, you may need to repe
 
 ## What it does
 
-- **Spatial studio**: a dot-grid canvas. Pan with the background, zoom with the wheel or trackpad, and use **Fit** to bring everything back into view.
+- **Spatial studio**: a dot-grid canvas. Scroll with two fingers to pan, pinch or `Ctrl` / `⌘` + scroll to zoom around the pointer, drag blank space for a selection marquee, and use **Fit** to bring everything back into view.
 - **Three broad types**: **Space** is a container or region; **Element** is a person, object, faction, concept, or landmark; **Event** is a moment in time. The older 14 node types still render in imported worlds.
 - **World time**: up to three snapshots per world, starting with `Origin`. Switch, rename, add, or delete a moment from the bottom timeline; each moment keeps its own nodes and relations.
 - **Inspector**: edit title, type, and description. Elements get an icon, Space parent, tags, and an image. Spaces get a background color and a list of their contents. Deleting a Space removes what is inside it.
 - **Relations**: drag from either side of a node and drop on another to create a named relation. Relation labels sit on the curve and can be renamed in place or from the inspector.
 - **Aliases**: a character can appear in two parts of the map without becoming two characters. Aliases share the source node's title and type, and are counted separately from base nodes.
-- **Canvas workflow**: right-click anywhere to create a node or add an image, drag an image file onto the canvas, drag nodes into a Space to parent them, double-click a title to rename it, and drag a Space to move its contents with it.
+- **Canvas workflow**: right-click blank space to create a node or add an image, drag an image file onto the canvas, drag nodes into a Space to parent them, double-click a title to rename it, and drag a Space to move its contents with it. Drag blank space to marquee-select, then drag any selected node to move the group. Right-click a node for its layer order (Bring forward / Send backward / Bring to front / Send to back), and copy/paste with `⌘C` / `⌘V`. Spaces render at 80% opacity.
 - **Create / Explore**: Create mode exposes the sidebar and inspector. Explore mode hides the editing chrome and opens a quiet read-only card for any node you click.
-- **All Elements**: search the world and open any base node from the outline drawer at the bottom of the sidebar.
+- **All Elements**: open any base node from the outline drawer at the top of the sidebar.
 - **Autosave**: changes land in a local SQLite database after a short debounce, with `Saving…` / `Saved` feedback. Undo and redo are available from the toolbar and `⌘Z` / `⇧⌘Z`.
 - **`.elsew` files**: a readable, versioned JSON format. Save the current world, or import a world as a new entry in the archive; imports never overwrite existing worlds. v0.1.0 files open with an `Origin` snapshot.
 - **PNG export**: render the whole world, including the dot grid, spaces, and relation lines, at 2× resolution through a native save dialog.
@@ -68,6 +68,7 @@ Because every build is ad-hoc signed rather than notarized, you may need to repe
 | Toggle Explore / Create          | `⇧⌘O`                  |
 | Export `.elsew`                  | `⇧⌘E`                  |
 | Export PNG                       | `⇧⌘P`                  |
+| Copy / paste selected nodes      | `⌘C` / `⌘V`            |
 | Rename a node on the canvas      | Double-click its title |
 | Rename a relation                | Double-click its label |
 | Cancel selection / close a panel | `Esc`                  |
@@ -216,4 +217,4 @@ Elsewhere has no network code, no analytics, no account system, and no synchroni
 
 ## Design
 
-The interface is based on the [Elsewhere Figma Make prototype](https://www.figma.com/make/aeRRMdDfVsyuJvz2Dy1DV3/Build-Elsewhere-Worldbuilding-Studio?t=Y0SPn1WcqeAIuBMw-1), Version 33 (2026-11-01). Figma Make files are not supported by the Figma MCP server, so the prototype's CSS, exported world, and reference screenshots were frozen into [docs/design](docs/design) and used as the visual contract. See [docs/design/README.md](docs/design/README.md) for tokens and intentional deviations.
+The interface is based on the [Elsewhere Figma Make prototype](https://www.figma.com/make/aeRRMdDfVsyuJvz2Dy1DV3/Build-Elsewhere-Worldbuilding-Studio?t=Y0SPn1WcqeAIuBMw-1), Version 35 (2026-11-04). Figma Make files are not supported by the Figma MCP server, so the prototype's CSS, exported world, and reference screenshots were frozen into [docs/design](docs/design) and used as the visual contract; the Version 35 interaction source was inspected through the Make file and is recorded in the design notes. See [docs/design/README.md](docs/design/README.md) for tokens and intentional deviations.

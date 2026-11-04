@@ -1,35 +1,32 @@
-# Elsewhere 验收清单（v0.1.4）
+# Elsewhere 验收清单（v0.1.5）
 
 ## 0. 构建信息
 
 | 项目 | 值                                                                   |
 | ---- | -------------------------------------------------------------------- |
-| 版本 | v0.1.4                                                               |
+| 版本 | v0.1.5                                                               |
 | 平台 | macOS 12+，universal（arm64 + x86_64）                               |
-| 产物 | `Elsewhere_0.1.4_universal.dmg`、`.zip`、`.sha256`、`SHA256SUMS.txt` |
+| 产物 | `Elsewhere_0.1.5_universal.dmg`、`.zip`、`.sha256`、`SHA256SUMS.txt` |
 | 签名 | ad-hoc（未使用 Apple Developer ID，未公证）                          |
 | 仓库 | https://github.com/Phanstal/Elsewhere-Worldbuilder                   |
 
-自动化状态（本地开发机，2026-11-03；GitHub Actions 结果在发布后补记）：
+自动化状态（2026-11-04）。按项目约定，本机不启动应用、不运行本地 Playwright；E2E 与 macOS 构建以 GitHub Actions 为准：
 
-- `npx eslint src tests`：通过；`npx prettier --check` 对受版本控制的前端文件通过（工作区中未跟踪的 Figma 副本会触发全量扫描报错，CI 在干净检出上运行 `npm run lint` / `npm run format:check`）
-- `npm run typecheck`：通过
-- `npm test`：23 个单元测试通过
-- `npm run build`：通过
-- `npm run test:e2e`：11 个 Playwright 用例通过（本地 Edge；1440×900 与 720×820）
-- `cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check`：通过
-- `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`：通过
-- `cargo test --manifest-path src-tauri/Cargo.toml`：通过
-- GitHub Actions CI（commit `d600bd0`，run [`41572109768`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/41572109768)）：前端 lint / format / typecheck / 23 个单测 / build / 11 个 E2E，Rust fmt / clippy / test 全部通过
-- GitHub Actions macOS Release（tag `v0.1.4`，run [`41572366220`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/41572366220)）：universal `.app` 构建、ad-hoc 签名、双架构校验、DMG / ZIP / checksum 打包、Release 发布全部通过
-- 发布产物：DMG 10,567,928 bytes，SHA-256 `5ec1b6557edd6d04fc816ed6c3ba48e867c77da3080c9070bf60dee7343ae684`；ZIP 9,557,657 bytes，SHA-256 `8da8345281c2045192d27018a37f48a96993cb90038f24a7c407915444e8bdd0`（与 `SHA256SUMS.txt` 及 GitHub asset digest 一致）。已下载 ZIP 并校验：`Info.plist` 版本 `0.1.4`、`LSMinimumSystemVersion 12.0`，`icon.icns` 含 1024px 新图标且圆角透明，Mach-O fat binary 含 x86_64 与 arm64
+- 本机 `npx eslint src/features/studio src/domain tests`：通过；`npx prettier --check` 对本次修改的受控文件通过（工作区中未跟踪的 Figma 副本会干扰全量扫描，CI 在干净检出上运行 `npm run lint` / `npm run format:check`）
+- 本机 `npm run typecheck`：通过
+- 本机 `npm test`：28 个单元测试通过
+- 本机 `npm run build`：通过
+- GitHub Actions CI（commit `2df254c`，run [`41796867357`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/41796867357)）：前端 lint / format / typecheck / 28 个单测 / build / **16 个 Playwright E2E**，Rust fmt / clippy / test 全部通过
+- GitHub Actions macOS Release（tag `v0.1.5`，run [`41797132141`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/41797132141)）：universal `.app` 构建、ad-hoc 签名、双架构校验、DMG / ZIP / checksum 打包、Release 发布全部通过
+- 发布产物：DMG 10,573,142 bytes，SHA-256 `5e1d26db16d084f13f3a79bcfb54fb86b7bbd192716831e085bc2ea2b0be522b`；ZIP 9,559,201 bytes，SHA-256 `8d5aa63e51f0b6f8f66b116f50b6bd1495b889c0b05be52aed1b3888b40bf0ba`（与 `SHA256SUMS.txt` 及 GitHub asset digest 一致）
+- 已下载 ZIP 并校验 SHA-256 与 `SHA256SUMS.txt` 一致；解包确认 `Info.plist` 的 `CFBundleShortVersionString` / `CFBundleVersion` 为 `0.1.5`、`LSMinimumSystemVersion` 为 `12.0`，`icon.icns` 含 1024×1024 `ic10` PNG（与仓库源图标字节一致，四角透明、中心不透明），主二进制为 fat Mach-O，含 x86_64（`0x1000007`）与 arm64（`0x100000c`）
 
 > Playwright 验证的是浏览器 localStorage 适配器；SQLite、原生菜单、窗口和 DMG 仍需按下面的真机步骤验收。
 
 ## 1. 下载与安装
 
-- [ ] 从 Releases 下载 `Elsewhere_0.1.4_universal.dmg`、`.zip` 与 `SHA256SUMS.txt`。
-- [ ] 校验：`shasum -a 256 -c Elsewhere_0.1.4_universal.dmg.sha256`，结果为 `OK`。
+- [ ] 从 Releases 下载 `Elsewhere_0.1.5_universal.dmg`、`.zip` 与 `SHA256SUMS.txt`。
+- [ ] 校验：`shasum -a 256 -c Elsewhere_0.1.5_universal.dmg.sha256`，结果为 `OK`。
 - [ ] 打开 DMG，把 `Elsewhere.app` 拖入 `/Applications`。
 - [ ] 首次启动：右键 → 打开 → 打开；或在“系统设置 → 隐私与安全性”里选择“仍要打开”。
 - [ ] 若提示“已损坏”，执行 `xattr -dr com.apple.quarantine /Applications/Elsewhere.app` 后重开。
@@ -55,19 +52,26 @@
 - [ ] 同名文件再次导入，世界名变为 `The Hollow Reach (imported)`，不覆盖原世界。
 - [ ] 关闭并重新打开应用，世界列表、顺序、节点内容保持不变。
 
-## 3. Version 33 工作室基础
+## 3. Version 35 工作室基础
 
 - [ ] 顶部工具栏从左到右：品牌、世界名下拉、撤销 / 重做、缩放 −/百分比/+、Fit、保存状态、Create / Explore 切换、`Save .elsew`、`Export PNG`。
-- [ ] 左侧栏只有三张创建卡：`Space`（Container or region）、`Element`（Person, object, faction…）、`Event`（Moment in time）；点击任一张在视口中心创建并选中。
-- [ ] 左侧栏底部有 `Search world…` 与 `All Elements`；打开抽屉后能搜索、跳转，计数只算基础节点。
+- [ ] 左侧栏顶部是 `All Elements`，下方才是三张创建卡：`Space`（Container or region）、`Element`（Person, object, faction…）、`Event`（Moment in time）；点击任一张在视口中心创建并选中。
+- [ ] 左侧栏不再有 `Search world…`；`All Elements` 抽屉能跳转节点，计数只算基础节点。
 - [ ] 右侧检查器显示类型眉标、标题、Type、Description；Element 额外显示 Icon、Space、Add image、Tags；Space 额外显示 Background、In this space。
-- [ ] 画布为蓝灰点阵；世界边界内更亮；Space 为可缩放区域；节点使用细边框、衬线标题、等宽类型标签。
-- [ ] 空白处拖动可平移；滚轮 / 触控板可缩放；`Fit` 将世界重新居中；缩放范围限制在 30%–200%。
+- [ ] 画布为蓝灰点阵；世界边界内更亮；Space 为可缩放区域且以 80% 不透明度显示；节点使用细边框、衬线标题、等宽类型标签。
+- [ ] 双指触控板滚动可平移画布；`Ctrl` / `⌘` + 滚轮或捏合可缩放，缩放锚定指针，范围 40%–180%；连续缩放时画面跟手，工具栏百分比在动画结束后同步。
+- [ ] 缩放过程中不会整棵 React 树逐帧重渲染；打开右键创建菜单、拖入图片、拖关系线时使用当前实时缩放。
+- [ ] 空白处按住左键拖出选择框，可框选多个节点；松开后它们保持多选，拖动任一选中节点可整组移动，且只产生一步撤销。
+- [ ] 中键拖动或按住 Space 拖动仍可平移；开始任何画布拖动会安全结束进行中的缩放动画。
 - [ ] 拖动节点可移动；拖动 Space 时其内部节点一起移动；松开后位置保存；撤销可回到拖动前。
 - [ ] Space 右下角有缩放把手；拖动时左上角保持锚定，尺寸提示实时更新；撤销恢复原尺寸。
 - [ ] Element / Event 没有缩放把手，尺寸固定。
 - [ ] 双击节点标题可就地改名，`Enter` 提交，`Esc` 取消，空标题不会保存为空。
-- [ ] 选中节点按 `Delete` / `Backspace` 可删除；选中关系时同样可删除。
+- [ ] 右键节点打开层级菜单：Bring forward / Send backward / Bring to front / Send to back；层级写入世界，重开应用与 `.elsew` 导入导出后仍保持。
+- [ ] `⌘C` / `⌘V`（Windows `Ctrl+C` / `Ctrl+V`）复制粘贴选中节点；副本偏移 32px、使用新 ID，父子引用正确重映射。
+- [ ] 修改 Description 后点击画布、检查器外或另一个节点，description 立即保存；这是一步可撤销的编辑。
+- [ ] 多选后检查器显示 `N elements selected`，删除按钮提示 `Delete N elements`。
+- [ ] 选中节点按 `Delete` / `Backspace` 可删除全部选中节点；选中关系时同样可删除。
 - [ ] 右键画布打开创建菜单（Space / Element / Event / Image），在点击位置创建；`Esc` 关闭菜单。
 - [ ] 修改后状态先显示 `Saving…`，约 420 ms 后变为 `Saved`。
 - [ ] 返回首页后立即重新打开，最后修改仍在（返回会 flush）。
@@ -179,7 +183,7 @@ macOS 应用最小宽度为 1040，以下用浏览器 `npm run dev` 或 Playwrig
 - [ ] 至少 50 个世界、单个世界 100 个节点时，首页滚动与画布拖动仍可用。
 - [ ] 应用退出后不残留后台进程。
 
-## 14. 已知限制（v0.1.4 接受）
+## 14. 已知限制（v0.1.5 接受）
 
 - 无 Apple 签名 / 公证，首次启动需要手动放行；每次新版本可能重复。
 - 无自动更新、云同步、账号、协作、版本历史（仅会话内撤销 / 重做）。
@@ -193,8 +197,9 @@ macOS 应用最小宽度为 1040，以下用浏览器 `npm run dev` 或 Playwrig
 
 ## 15. 验收结论
 
-- [x] 自动化检查全部通过（GitHub Actions CI 绿色）
+- [x] 自动化检查全部通过（GitHub Actions CI 绿色；16 个 Playwright E2E）
 - [x] macOS Release 工作流产出了 DMG、ZIP 与 checksum
+- [x] ZIP 已下载、SHA-256 匹配，`Info.plist`、双架构与 1024px 图标检查通过
 - [ ] 真机安装、创建、编辑、别名、关系、时间快照、导入导出、PNG、Explore、菜单、窗口恢复全部通过
 - [ ] 验收人：__________ 日期：__________
 - [ ] 备注：
