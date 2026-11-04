@@ -329,7 +329,7 @@ macOS 数据位置：
 ## 10. 测试策略
 
 - **单元测试**：28 个用例，覆盖创建、移动容器子节点、组移动、层级、复制粘贴、移除、别名、关系、计数、边界、fitView、快照切换、容器包含关系、v2 字段（含 `layer`）与快照序列化、旧文件补 `Origin`、合法 / 非法导入；
-- **E2E**：16 个用例，覆盖创建世界、编辑并刷新回读、改名、别名、连线与关系改名、`.elsew` / PNG 下载、导入、Explore、缩放把手、时间快照、删除世界、窄屏 Quick add，以及框选组移动、复制粘贴、层级菜单、Space 透明度、侧栏结构、双指平移 / 捏合缩放、Description 外部点击保存；
+- **E2E**：17 个用例，覆盖创建世界、编辑并刷新回读、改名、别名、连线与关系改名、`.elsew` / PNG 下载、导入、Explore、缩放把手、时间快照、删除世界、窄屏 Quick add，以及框选组移动、复制粘贴、层级菜单、Space 透明度、侧栏结构、双指平移 / 捏合缩放、Description 外部点击保存；
 - **原生验证**：在 Windows 上用 WebView2 CDP 连接真实 Tauri 窗口，新建 / 改名 / 自动保存，再直接查询 `elsewhere.db` 验证 SQLite 数据；macOS 的菜单、原生透明标题栏拖动、保存对话框由真机验收覆盖；
 - **CI**：Ubuntu 跑前端与 Playwright（Chromium），macOS 跑 rustfmt / clippy / cargo test，并打 universal `.app`。
 

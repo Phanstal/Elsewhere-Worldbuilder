@@ -16,7 +16,7 @@
 - 本机 `npm run typecheck`：通过
 - 本机 `npm test`：28 个单元测试通过
 - 本机 `npm run build`：通过
-- GitHub Actions CI（commit `2df254c`，run [`41796867357`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/41796867357)）：前端 lint / format / typecheck / 28 个单测 / build / **16 个 Playwright E2E**，Rust fmt / clippy / test 全部通过
+- GitHub Actions CI（commit `2df254c`，run [`41796867357`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/41796867357)）：前端 lint / format / typecheck / 28 个单测 / build / **17 个 Playwright E2E**，Rust fmt / clippy / test 全部通过
 - GitHub Actions macOS Release（tag `v0.1.5`，run [`41797132141`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/41797132141)）：universal `.app` 构建、ad-hoc 签名、双架构校验、DMG / ZIP / checksum 打包、Release 发布全部通过
 - 发布产物：DMG 10,573,142 bytes，SHA-256 `5e1d26db16d084f13f3a79bcfb54fb86b7bbd192716831e085bc2ea2b0be522b`；ZIP 9,559,201 bytes，SHA-256 `8d5aa63e51f0b6f8f66b116f50b6bd1495b889c0b05be52aed1b3888b40bf0ba`（与 `SHA256SUMS.txt` 及 GitHub asset digest 一致）
 - 已下载 ZIP 并校验 SHA-256 与 `SHA256SUMS.txt` 一致；解包确认 `Info.plist` 的 `CFBundleShortVersionString` / `CFBundleVersion` 为 `0.1.5`、`LSMinimumSystemVersion` 为 `12.0`，`icon.icns` 含 1024×1024 `ic10` PNG（与仓库源图标字节一致，四角透明、中心不透明），主二进制为 fat Mach-O，含 x86_64（`0x1000007`）与 arm64（`0x100000c`）
@@ -197,7 +197,7 @@ macOS 应用最小宽度为 1040，以下用浏览器 `npm run dev` 或 Playwrig
 
 ## 15. 验收结论
 
-- [x] 自动化检查全部通过（GitHub Actions CI 绿色；16 个 Playwright E2E）
+- [x] 自动化检查全部通过（GitHub Actions CI 绿色；17 个 Playwright E2E）
 - [x] macOS Release 工作流产出了 DMG、ZIP 与 checksum
 - [x] ZIP 已下载、SHA-256 匹配，`Info.plist`、双架构与 1024px 图标检查通过
 - [ ] 真机安装、创建、编辑、别名、关系、时间快照、导入导出、PNG、Explore、菜单、窗口恢复全部通过
