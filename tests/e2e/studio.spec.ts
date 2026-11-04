@@ -277,7 +277,7 @@ test('marquee-selects elements and moves the group together', async ({ page }) =
   await expect(page.locator('.world-node.selected')).toHaveCount(2);
 
   const before = await nodes.evaluateAll((elements) =>
-    elements.map((element) => Number(element.style.left)),
+    elements.map((element) => parseFloat(element.style.left)),
   );
   const first = await nodes.first().boundingBox();
   await page.mouse.move(first!.x + first!.width / 2, first!.y + first!.height / 2);
@@ -287,7 +287,7 @@ test('marquee-selects elements and moves the group together', async ({ page }) =
   });
   await page.mouse.up();
   const after = await nodes.evaluateAll((elements) =>
-    elements.map((element) => Number(element.style.left)),
+    elements.map((element) => parseFloat(element.style.left)),
   );
   expect(after[0] - before[0]).toBeGreaterThan(20);
   expect(Math.abs(after[0] - before[0] - (after[1] - before[1]))).toBeLessThanOrEqual(2);
