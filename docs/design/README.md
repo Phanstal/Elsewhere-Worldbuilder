@@ -5,7 +5,7 @@ This folder is the frozen visual contract for Elsewhere. The app is a hand-built
 ## Source
 
 - Figma Make prototype: [Build Elsewhere Worldbuilding Studio](https://www.figma.com/make/aeRRMdDfVsyuJvz2Dy1DV3/Build-Elsewhere-Worldbuilding-Studio?t=Y0SPn1WcqeAIuBMw-1)
-- Frozen: 2026-11-01 (Version 33)
+- Frozen assets: 2026-11-01 (Version 33); interaction baseline refreshed 2026-11-04 (Version 35)
 - `prototype.css` — the Version 33 prototype's compiled CSS, used to read exact colors, type sizes, borders, and spacing
 - `prototype-home-full.png` + `prototype-home-full.html` — the frozen home screen reference
 - `prototype-studio.png`, `prototype-timeline.png` — frozen Version 33 studio and world-time references
@@ -24,6 +24,18 @@ The current studio is the 2026-11-01 Version 33 design. Compared with the 0.1.0 
 - The **All Elements** outline drawer, world search, and a right-click canvas create menu.
 - Element icons (character / faction / concept / object), Space backgrounds, parent containment, tags, and image upload / drop.
 - A new blue-gray canvas, 210 px sidebar, 270 px inspector, serif node titles, and the Version 33 timeline.
+
+## Version 35 interaction differences
+
+The 2026-11-04 Version 35 pass keeps the Version 33 visual language and changes interaction:
+
+- Canvas zoom no longer re-renders the React tree per frame; a `requestAnimationFrame` loop writes the world transform directly and syncs the toolbar percentage once at the end.
+- Two-finger trackpad scroll pans; pinch (Ctrl / ⌘ + wheel) zooms around the pointer with soft damping.
+- Dragging blank canvas draws a selection marquee; selected nodes stay selected and can be dragged as one group.
+- Description commits on blur or outside click.
+- Cmd / Ctrl + C / V copy and paste selected nodes.
+- Right-click a node for Bring forward / Send backward / Bring to front / Send to back; the layer is stored in the world.
+- `All Elements` moves above Create, world search is removed, and Space nodes use 80% opacity.
 
 ## Design language
 
@@ -69,10 +81,10 @@ No web fonts are loaded. Georgia and the system UI font are always available off
 
 ## Layout
 
-### Studio (Version 33)
+### Studio (Version 35)
 
 - Toolbar 58 px: brand, world title, centred undo / redo / zoom / Fit, right-side save state, Create / Explore, `Save .elsew`, `Export PNG`.
-- Sidebar 210 px: three create cards and, at the bottom, `Search world…` plus `All Elements`.
+- Sidebar 210 px: `All Elements` at the top, then the three create cards. World search was removed in Version 35.
 - Canvas: 1 px inner rule, dot grid, nodes on a 1100 × 680 world, relation labels on curves.
 - Inspector 270 px: type, description, type-specific fields, delete. Relation inspector replaces it when a relation is selected.
 - Bottom **World time** strip: up to three snapshots; choose, rename, delete, or add a moment.
@@ -87,12 +99,12 @@ No web fonts are loaded. Georgia and the system UI font are always available off
 - Empty state replaces the list with a quiet message; the card is not hidden, so the layout remains stable.
 - At ≤640px the grid becomes one column and the archive card follows the intro.
 
-### Studio (Version 33)
+### Studio (Version 35)
 
 - Toolbar 58px: brand block, world title, centered undo / redo / zoom / Fit, right-side save state, Create / Explore, `Save .elsew`, `Export PNG`. On macOS the native title bar (transparent, title hidden) sits above the web content; the toolbar does not reserve traffic-light padding and is not a drag region.
 - Workspace `210px 1fr 270px`: sidebar, canvas, inspector. Explore hides the sidebar and inspector.
-- Canvas: blue-gray `#eef1f1`, 22px dot grid, 1px inner rule, world layer `1100 × 680`, initially 90% and centered.
-- Sidebar: three create cards with icon, name, subtitle, and `+`; bottom `Search world…` and `All Elements` with base-node count.
+- Canvas: blue-gray `#eef1f1`, 22px dot grid, 1px inner rule, world layer `1100 × 680`, initially 90% and centered. Two-finger scroll pans, pinch zooms at the pointer, blank drag opens a selection marquee, and Space nodes render at 80% opacity.
+- Sidebar: `All Elements` with base-node count at the top, then three create cards with icon, name, subtitle, and `+`. No world search field.
 - Inspector: type eyebrow, serif title, Type select, Description, type-specific fields (Element icon / Space / image / tags; Space background / children), and Delete. Relation inspector replaces it when a relation is selected.
 - Bottom world-time strip: `WORLD TIME 1/3` through `3/3`; up to three snapshot buttons, a rename input, delete, and add.
 - Right-click create menu and All Elements drawer float above the canvas; the drawer sits above the timeline.

@@ -4,6 +4,7 @@ import {
   addNode,
   addRelation,
   baseNodeCount,
+  changeNodeLayer,
   changeNodeType,
   containingSpace,
   createAlias,
@@ -12,8 +13,13 @@ import {
   fitView,
   formatCount,
   moveNode,
+  moveNodesTo,
+  nodeLayer,
   nodesInside,
+  nodesMovedWith,
+  pasteNodes,
   removeNode,
+  removeNodes,
   renameRelation,
   snapshotIndex,
   syncActiveSnapshot,
@@ -188,6 +194,78 @@ describe('world model', () => {
       x: 700,
       y: 480,
     });
+  });
+
+  it('moves a multi-selection by absolute targets and keeps relative geometry', () => {
+    const first = addNode(world, 'Element', { x: 300, y: 200 });
+    const second = addNode(first.world, 'Element', { x: 500, y: 400 });
+    const targets = new Map([
+      [first.node.id, { x: 350, y: 250 }],
+      [second.node.id, { x: 550, y: 450 }],
+    ]);
+    const moved = moveNodesTo(second.world, targets);
+    expect(moved.nodes.find((node) => node.id === first.node.id)).toMatchObject({
+      x: 350,
+      y: 250,
+    });
+    expect(moved.nodes.find((node) => node.id === second.node.id)).toMatchObject({
+      x: 550,
+      y: 450,
+    });
+    expect(
+      (moved.nodes.find((node) => node.id === second.node.id)!.x ?? 0) -
+        (moved.nodes.find((node) => node.id === first.node.id)!.x ?? 0),
+    ).toBe(200);
+  });
+
+  it('expands group movement to aliases and children', () => {
+    const space = addNode(world, 'Space', { x: 550, y: 340 });
+    const child = addNode(space.world, 'Element', { x: 600, y: 380 });
+    const nested = updateNode(child.world, child.node.id, (node) => ({
+      ...node,
+      parentId: space.node.id,
+    }));
+    const alias = createAlias(nested, space.node);
+    expect(nodesMovedWith(alias.world, [space.node.id])).toEqual(
+      new Set([space.node.id, child.node.id, alias.node.id]),
+    );
+  });
+
+  it('changes layer order using the semantic defaults', () => {
+    const space = addNode(world, 'Space');
+    const element = addNode(space.world, 'Element');
+    expect(nodeLayer(space.node)).toBe(0);
+    expect(nodeLayer(element.node)).toBe(3);
+    const raised = changeNodeLayer(element.world, element.node.id, 'up');
+    expect(raised.nodes.find((node) => node.id === element.node.id)?.layer).toBe(4);
+    const lowered = changeNodeLayer(raised, space.node.id, 'bottom');
+    expect(lowered.nodes.find((node) => node.id === space.node.id)?.layer).toBe(-1);
+  });
+
+  it('pastes copies with fresh ids and remapped parents', () => {
+    const space = addNode(world, 'Space', { x: 100, y: 100 });
+    const child = addNode(space.world, 'Element', { x: 140, y: 130 });
+    const nested = updateNode(child.world, child.node.id, (node) => ({
+      ...node,
+      parentId: space.node.id,
+    }));
+    const sourceSpace = nested.nodes.find((node) => node.id === space.node.id)!;
+    const sourceChild = nested.nodes.find((node) => node.id === child.node.id)!;
+    const result = pasteNodes(nested, [sourceSpace, sourceChild], 32);
+    const pastedSpace = result.nodes.find((node) => node.type === 'Space')!;
+    const pastedChild = result.nodes.find((node) => node.type === 'Element')!;
+    expect(pastedSpace.id).not.toBe(sourceSpace.id);
+    expect(pastedChild.id).not.toBe(sourceChild.id);
+    expect(pastedSpace).toMatchObject({ x: 132, y: 132 });
+    expect(pastedChild.parentId).toBe(pastedSpace.id);
+    expect(result.world.nodes).toHaveLength(4);
+  });
+
+  it('removes several selected nodes in one update', () => {
+    const first = addNode(world, 'Element');
+    const second = addNode(first.world, 'Event');
+    const removed = removeNodes(second.world, [first.node.id, second.node.id]);
+    expect(removed.nodes).toHaveLength(0);
   });
 
   it('formats counts, filenames and edits', () => {

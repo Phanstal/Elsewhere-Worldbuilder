@@ -253,6 +253,114 @@ test('deletes a world from the archive', async ({ page }) => {
   await expect(page.getByText('No saved worlds yet.')).toBeVisible();
 });
 
+test('marquee-selects elements and moves the group together', async ({ page }) => {
+  await createWorld(page);
+  await addNode(page, 'Element');
+  await addNode(page, 'Element');
+  const nodes = page.locator('.world-node');
+  await expect(nodes).toHaveCount(2);
+
+  const boxes = await nodes.evaluateAll((elements) =>
+    elements.map((element) => {
+      const rect = element.getBoundingClientRect();
+      return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom };
+    }),
+  );
+  const left = Math.min(...boxes.map((box) => box.left)) - 34;
+  const top = Math.min(...boxes.map((box) => box.top)) - 34;
+  const right = Math.max(...boxes.map((box) => box.right)) + 34;
+  const bottom = Math.max(...boxes.map((box) => box.bottom)) + 34;
+  await page.mouse.move(left, top);
+  await page.mouse.down();
+  await page.mouse.move(right, bottom, { steps: 12 });
+  await page.mouse.up();
+  await expect(page.locator('.world-node.selected')).toHaveCount(2);
+
+  const before = await nodes.evaluateAll((elements) =>
+    elements.map((element) => Number(element.style.left)),
+  );
+  const first = await nodes.first().boundingBox();
+  await page.mouse.move(first!.x + first!.width / 2, first!.y + first!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(first!.x + first!.width / 2 + 70, first!.y + first!.height / 2 + 45, {
+    steps: 12,
+  });
+  await page.mouse.up();
+  const after = await nodes.evaluateAll((elements) =>
+    elements.map((element) => Number(element.style.left)),
+  );
+  expect(after[0] - before[0]).toBeGreaterThan(20);
+  expect(Math.abs(after[0] - before[0] - (after[1] - before[1]))).toBeLessThanOrEqual(2);
+  await expect(page.locator('.inspector')).toContainText('2 elements selected');
+});
+
+test('copies and pastes selected nodes', async ({ page }) => {
+  await createWorld(page);
+  await addNode(page, 'Element');
+  await page.locator('.world-node').click({ force: true });
+  await page.keyboard.press('Control+c');
+  await page.keyboard.press('Control+v');
+  await expect(page.locator('.world-node')).toHaveCount(2);
+  await expect(page.locator('.world-node.selected')).toHaveCount(1);
+});
+
+test('changes a node layer from the right-click menu', async ({ page }) => {
+  await createWorld(page);
+  await addNode(page, 'Element');
+  await addNode(page, 'Event');
+  const first = page.locator('.world-node').first();
+  const before = Number(await first.evaluate((element) => getComputedStyle(element).zIndex));
+  await first.click({ button: 'right', force: true });
+  await expect(page.getByRole('menu', { name: 'Node layer' })).toBeVisible();
+  await page.getByRole('menuitem', { name: 'Bring to front' }).click();
+  const after = Number(await first.evaluate((element) => getComputedStyle(element).zIndex));
+  expect(after).toBeGreaterThan(before);
+});
+
+test('renders spaces at 80 percent opacity and keeps All Elements above Create', async ({
+  page,
+}) => {
+  await createWorld(page);
+  await expect(page.getByLabel('Search world')).toHaveCount(0);
+  const trigger = page.locator('.outline-trigger');
+  const create = page.locator('.create-section');
+  await expect(trigger).toBeVisible();
+  const triggerBox = await trigger.boundingBox();
+  const createBox = await create.boundingBox();
+  expect(triggerBox!.y).toBeLessThan(createBox!.y);
+  await addNode(page, 'Space');
+  await expect(page.locator('.world-node')).toHaveCSS('opacity', '0.8');
+});
+
+test('pans with two-finger scroll and zooms with pinching', async ({ page }) => {
+  await createWorld(page);
+  await addNode(page, 'Element');
+  const world = page.locator('.world');
+  await page.mouse.move(760, 500);
+  const beforePan = await world.evaluate((element) => element.style.transform);
+  await page.mouse.wheel(0, 140);
+  await expect.poll(() => world.evaluate((element) => element.style.transform)).not.toBe(beforePan);
+
+  const zoom = page.locator('.zoom-control span');
+  const beforeZoom = await zoom.textContent();
+  await page.keyboard.down('Control');
+  await page.mouse.wheel(0, -320);
+  await page.keyboard.up('Control');
+  await expect.poll(() => zoom.textContent(), { timeout: 2500 }).not.toBe(beforeZoom);
+});
+
+test('commits a description when clicking outside the field', async ({ page }) => {
+  await createWorld(page);
+  await addNode(page, 'Element');
+  await page.getByLabel('Description').fill('A note that should survive.');
+  await page.locator('.canvas').click({ position: { x: 760, y: 520 } });
+  await waitForSave(page);
+  await goHome(page);
+  await page.getByRole('button', { name: /Open Untitled World/i }).click();
+  await page.locator('.world-node').click({ force: true });
+  await expect(page.getByLabel('Description')).toHaveValue('A note that should survive.');
+});
+
 test.describe('compact layout', () => {
   test.use({ viewport: { width: 720, height: 820 } });
 

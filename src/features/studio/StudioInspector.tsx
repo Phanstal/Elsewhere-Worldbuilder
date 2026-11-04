@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   CREATE_TYPES,
   ELEMENT_ICONS,
@@ -20,6 +20,7 @@ interface StudioInspectorProps {
   world: World;
   node: WorldNode | null;
   relation: Relation | null;
+  selectionCount: number;
   onBeginTransaction: () => void;
   onEndTransaction: () => void;
   onReplace: (updater: (world: World) => World) => void;
@@ -36,6 +37,7 @@ export function StudioInspector({
   world,
   node,
   relation,
+  selectionCount,
   onBeginTransaction,
   onEndTransaction,
   onReplace,
@@ -54,6 +56,35 @@ export function StudioInspector({
   const [menuOpen, setMenuOpen] = useState(false);
   const [relationDraft, setRelationDraft] = useState(relation?.name ?? '');
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const descriptionEditingRef = useRef(false);
+  const pendingDescriptionRef = useRef<string | null>(null);
+  const nodeRef = useRef(node);
+
+  useEffect(() => {
+    nodeRef.current = node;
+  }, [node]);
+
+  // If a selection change unmounts the inspector before the textarea's blur
+  // handler runs, flush the draft here so "click outside" always persists.
+  useEffect(() => {
+    return () => {
+      const current = nodeRef.current;
+      const pending = pendingDescriptionRef.current;
+      if (current && pending !== null && pending !== current.description) {
+        onReplace((world) =>
+          updateNode(world, current.id, (entry) => ({
+            ...entry,
+            description: pending.slice(0, 20000),
+          })),
+        );
+      }
+      pendingDescriptionRef.current = null;
+      if (descriptionEditingRef.current) {
+        descriptionEditingRef.current = false;
+        onEndTransaction();
+      }
+    };
+  }, [onEndTransaction, onReplace]);
 
   if (relation) {
     const from = world.nodes.find((entry) => entry.id === relation.from);
@@ -143,7 +174,9 @@ export function StudioInspector({
 
   const commitDescription = () => {
     if (descriptionDraft === node.description) return;
-    onCommit((current) =>
+    // The textarea is wrapped in a focus/blur transaction, so replace keeps
+    // the whole edit as a single undo step.
+    onReplace((current) =>
       updateNode(current, node.id, (entry) => ({
         ...entry,
         description: descriptionDraft.slice(0, 20000),
@@ -253,6 +286,12 @@ export function StudioInspector({
         </button>
       </div>
 
+      {selectionCount > 1 && (
+        <div className="multi-selection-note">
+          {selectionCount} elements selected. Drag any selected node to move the group.
+        </div>
+      )}
+
       <label className="field-label" htmlFor="node-type">
         Type
       </label>
@@ -276,10 +315,18 @@ export function StudioInspector({
       <textarea
         id="node-description"
         value={descriptionDraft}
-        onChange={(event) => setDescriptionDraft(event.target.value)}
-        onFocus={onBeginTransaction}
+        onChange={(event) => {
+          setDescriptionDraft(event.target.value);
+          pendingDescriptionRef.current = event.target.value;
+        }}
+        onFocus={() => {
+          descriptionEditingRef.current = true;
+          onBeginTransaction();
+        }}
         onBlur={() => {
           commitDescription();
+          pendingDescriptionRef.current = null;
+          descriptionEditingRef.current = false;
           onEndTransaction();
         }}
         placeholder="Add a quiet note about this part of your world…"
@@ -433,7 +480,11 @@ export function StudioInspector({
       <div className="inspector-bottom">
         <button type="button" className="delete" onClick={onDeleteNode}>
           <Icon name="trash" size={16} />
-          {alias ? 'Delete alias' : 'Delete node'}
+          {selectionCount > 1
+            ? `Delete ${selectionCount} elements`
+            : alias
+              ? 'Delete alias'
+              : 'Delete node'}
         </button>
       </div>
     </aside>

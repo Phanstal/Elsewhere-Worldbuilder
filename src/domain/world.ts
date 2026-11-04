@@ -231,14 +231,8 @@ export function updateNode(
   return changed ? touchWorld({ ...world, nodes }) : world;
 }
 
-export function moveNode(world: World, id: number, x: number, y: number): World {
-  const node = world.nodes.find((entry) => entry.id === id);
-  if (!node) return world;
-  const dx = Math.round(x - node.x);
-  const dy = Math.round(y - node.y);
-  if (dx === 0 && dy === 0) return world;
-
-  const moving = new Set<number>([id]);
+export function nodesMovedWith(world: World, ids: readonly number[]): Set<number> {
+  const moving = new Set<number>(ids);
   let expanded = true;
   while (expanded) {
     expanded = false;
@@ -250,7 +244,17 @@ export function moveNode(world: World, id: number, x: number, y: number): World 
       }
     }
   }
+  return moving;
+}
 
+export function moveNode(world: World, id: number, x: number, y: number): World {
+  const node = world.nodes.find((entry) => entry.id === id);
+  if (!node) return world;
+  const dx = Math.round(x - node.x);
+  const dy = Math.round(y - node.y);
+  if (dx === 0 && dy === 0) return world;
+
+  const moving = nodesMovedWith(world, [id]);
   let changed = false;
   const nodes = world.nodes.map((entry) => {
     if (!moving.has(entry.id)) return entry;
@@ -258,6 +262,88 @@ export function moveNode(world: World, id: number, x: number, y: number): World 
     return { ...entry, x: entry.x + dx, y: entry.y + dy };
   });
   return changed ? touchWorld({ ...world, nodes }) : world;
+}
+
+/**
+ * Moves every node with an explicit target position. Used by group drags so the
+ * whole selection keeps its relative geometry and only one undo entry is made.
+ */
+export function moveNodesTo(
+  world: World,
+  positions: ReadonlyMap<number, { x: number; y: number }>,
+): World {
+  let changed = false;
+  const nodes = world.nodes.map((entry) => {
+    const target = positions.get(entry.id);
+    if (!target) return entry;
+    const x = Math.round(target.x);
+    const y = Math.round(target.y);
+    if (x === entry.x && y === entry.y) return entry;
+    changed = true;
+    return { ...entry, x, y };
+  });
+  return changed ? touchWorld({ ...world, nodes }) : world;
+}
+
+export function nodeLayer(node: WorldNode): number {
+  return node.layer ?? (isContainerNode(node) ? 0 : 3);
+}
+
+export type LayerAction = 'up' | 'down' | 'top' | 'bottom';
+
+export function changeNodeLayer(world: World, id: number, action: LayerAction): World {
+  const node = world.nodes.find((entry) => entry.id === id);
+  if (!node) return world;
+  const layers = world.nodes.map(nodeLayer);
+  const current = nodeLayer(node);
+  const next =
+    action === 'up'
+      ? current + 1
+      : action === 'down'
+        ? current - 1
+        : action === 'top'
+          ? Math.max(...layers) + 1
+          : Math.min(...layers) - 1;
+  if (next === current) return world;
+  return updateNode(world, id, (entry) => ({ ...entry, layer: next }));
+}
+
+export interface PasteResult {
+  world: World;
+  nodes: WorldNode[];
+}
+
+export function pasteNodes(world: World, sources: readonly WorldNode[], offset = 32): PasteResult {
+  if (sources.length === 0) return { world, nodes: [] };
+  const taken = new Set<number>(world.nodes.map((node) => node.id));
+  let candidate = Date.now();
+  const idMap = new Map<number, number>();
+  for (const source of sources) {
+    while (taken.has(candidate)) candidate += 1;
+    idMap.set(source.id, candidate);
+    taken.add(candidate);
+    candidate += 1;
+  }
+  const nodes = sources.map((source) => ({
+    ...structuredClone(source),
+    id: idMap.get(source.id)!,
+    x: Math.round(source.x + offset),
+    y: Math.round(source.y + offset),
+    ...(source.parentId !== undefined
+      ? { parentId: idMap.get(source.parentId) ?? source.parentId }
+      : {}),
+    ...(source.sourceId !== undefined
+      ? { sourceId: idMap.get(source.sourceId) ?? source.sourceId }
+      : {}),
+  }));
+  return {
+    world: touchWorld({ ...world, nodes: [...world.nodes, ...nodes] }),
+    nodes,
+  };
+}
+
+export function removeNodes(world: World, ids: readonly number[]): World {
+  return ids.reduce((current, id) => removeNode(current, id), world);
 }
 
 export function removeNode(world: World, id: number): World {

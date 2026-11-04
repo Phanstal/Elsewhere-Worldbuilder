@@ -1,5 +1,7 @@
 import {
+  useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -10,10 +12,14 @@ import {
 import type { CreateType, Relation, World, WorldNode } from '../../domain/types';
 import {
   containingSpace,
-  moveNode,
+  isContainerNode,
+  moveNodesTo,
+  nodeLayer,
   nodeVisualSize,
+  nodesMovedWith,
   renameRelation,
   updateNode,
+  type LayerAction,
   type ViewTransform,
 } from '../../domain/world';
 import { Icon, TypeIcon } from '../../components/Icon';
@@ -31,10 +37,12 @@ interface StudioCanvasProps {
   view: ViewTransform;
   setView: (updater: (view: ViewTransform) => ViewTransform) => void;
   onViewportChange: (size: CanvasSize) => void;
-  selectedNodeId: number | null;
+  selectedNodeIds: number[];
   selectedRelationId: number | null;
   onSelectNode: (id: number | null) => void;
+  onSelectNodes: (ids: number[], primary?: number | null) => void;
   onSelectRelation: (id: number | null) => void;
+  onChangeLayer: (id: number, action: LayerAction) => void;
   onBeginTransaction: () => void;
   onEndTransaction: () => void;
   onCancelTransaction: () => void;
@@ -63,9 +71,10 @@ type DragState =
       pointerId: number;
       clientX: number;
       clientY: number;
-      nodeId: number;
-      nodeX: number;
-      nodeY: number;
+      primaryId: number;
+      ids: number[];
+      startPositions: Map<number, { x: number; y: number }>;
+      startScale: number;
       moved: boolean;
     }
   | {
@@ -79,6 +88,14 @@ type DragState =
       startHeight: number;
       startLeft: number;
       startTop: number;
+      startScale: number;
+    }
+  | {
+      kind: 'marquee';
+      pointerId: number;
+      startX: number;
+      startY: number;
+      moved: boolean;
     };
 
 interface ConnectionState {
@@ -92,6 +109,41 @@ interface CreateMenuState {
   y: number;
   worldX: number;
   worldY: number;
+}
+
+interface NodeMenuState {
+  id: number;
+  x: number;
+  y: number;
+}
+
+interface SelectionBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface ZoomAnchor {
+  screenX: number;
+  screenY: number;
+  worldX: number;
+  worldY: number;
+}
+
+const ZOOM_DAMPING = 0.14;
+const ZOOM_EPSILON = 0.0005;
+const ZOOM_WHEEL_GAIN = 0.0012;
+const ZOOM_MIN = 0.4;
+const ZOOM_MAX = 1.8;
+
+function normalizeWheelDelta(event: WheelEvent): { x: number; y: number } {
+  const multiplier = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 100 : 1;
+  return { x: event.deltaX * multiplier, y: event.deltaY * multiplier };
+}
+
+function sameView(a: ViewTransform, b: ViewTransform): boolean {
+  return a.x === b.x && a.y === b.y && a.scale === b.scale;
 }
 
 interface RelationGeometry {
@@ -149,10 +201,12 @@ export function StudioCanvas({
   view,
   setView,
   onViewportChange,
-  selectedNodeId,
+  selectedNodeIds,
   selectedRelationId,
   onSelectNode,
+  onSelectNodes,
   onSelectRelation,
+  onChangeLayer,
   onBeginTransaction,
   onEndTransaction,
   onCancelTransaction,
@@ -167,18 +221,68 @@ export function StudioCanvas({
 }: StudioCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef(view);
+  const liveViewRef = useRef(view);
+  const zoomTargetRef = useRef(view.scale);
+  const zoomAnchorRef = useRef<ZoomAnchor>({ screenX: 0, screenY: 0, worldX: 0, worldY: 0 });
+  const zoomFrameRef = useRef<number | null>(null);
+  const panIdleTimerRef = useRef<number | null>(null);
+  const spacePressedRef = useRef(false);
   const dragRef = useRef<DragState | null>(null);
-  const [dragging, setDragging] = useState(false);
+  const [isPanning, setIsPanning] = useState(false);
+  const [selectionBox, setSelectionBox] = useState<SelectionBox | null>(null);
   const [connection, setConnection] = useState<ConnectionState | null>(null);
   const [menu, setMenu] = useState<CreateMenuState | null>(null);
+  const [nodeMenu, setNodeMenu] = useState<NodeMenuState | null>(null);
   const [editingNodeId, setEditingNodeId] = useState<number | null>(null);
   const [titleDraft, setTitleDraft] = useState('');
   const [editingRelationId, setEditingRelationId] = useState<number | null>(null);
   const [relationDraft, setRelationDraft] = useState('');
 
-  useEffect(() => {
+  const applyLiveView = useCallback(
+    (next: ViewTransform) => {
+      liveViewRef.current = next;
+      const element = worldRef.current;
+      if (element) {
+        element.style.transform = `translate3d(${next.x}px, ${next.y}px, 0) scale(${next.scale})`;
+      }
+    },
+    [worldRef],
+  );
+
+  const commitLiveView = useCallback(() => {
+    const live = liveViewRef.current;
+    if (sameView(live, viewRef.current)) return;
+    setView(() => ({ ...live }));
+  }, [setView]);
+
+  const stopZoomAnimation = useCallback(() => {
+    if (zoomFrameRef.current !== null) {
+      cancelAnimationFrame(zoomFrameRef.current);
+      zoomFrameRef.current = null;
+    }
+    zoomTargetRef.current = liveViewRef.current.scale;
+  }, []);
+
+  // Any external viewport change (toolbar zoom, fit, focus, undo layout) is
+  // applied once here. During a wheel zoom the world transform is updated
+  // directly by requestAnimationFrame and React is only notified at the end.
+  useLayoutEffect(() => {
+    if (zoomFrameRef.current !== null) {
+      cancelAnimationFrame(zoomFrameRef.current);
+      zoomFrameRef.current = null;
+    }
+    liveViewRef.current = view;
     viewRef.current = view;
-  }, [view]);
+    zoomTargetRef.current = view.scale;
+    applyLiveView(view);
+  }, [applyLiveView, view]);
+
+  useEffect(() => {
+    return () => {
+      if (zoomFrameRef.current !== null) cancelAnimationFrame(zoomFrameRef.current);
+      if (panIdleTimerRef.current !== null) window.clearTimeout(panIdleTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -194,8 +298,11 @@ export function StudioCanvas({
   }, [onViewportChange]);
 
   useEffect(() => {
-    if (!menu) return;
-    const close = () => setMenu(null);
+    if (!menu && !nodeMenu) return;
+    const close = () => {
+      setMenu(null);
+      setNodeMenu(null);
+    };
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') close();
     };
@@ -205,7 +312,30 @@ export function StudioCanvas({
       window.removeEventListener('pointerdown', close);
       window.removeEventListener('keydown', onKey);
     };
-  }, [menu]);
+  }, [menu, nodeMenu]);
+
+  useEffect(() => {
+    const isEditing = (target: EventTarget | null) =>
+      target instanceof HTMLElement &&
+      (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+    const down = (event: KeyboardEvent) => {
+      if (event.code === 'Space' && !isEditing(event.target)) spacePressedRef.current = true;
+    };
+    const up = (event: KeyboardEvent) => {
+      if (event.code === 'Space') spacePressedRef.current = false;
+    };
+    const blur = () => {
+      spacePressedRef.current = false;
+    };
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    window.addEventListener('blur', blur);
+    return () => {
+      window.removeEventListener('keydown', down);
+      window.removeEventListener('keyup', up);
+      window.removeEventListener('blur', blur);
+    };
+  }, []);
 
   const relations = useMemo(
     () =>
@@ -220,32 +350,68 @@ export function StudioCanvas({
 
   const canvasPoint = (clientX: number, clientY: number) => {
     const rect = canvasRef.current?.getBoundingClientRect();
-    const currentView = viewRef.current;
+    const currentView = liveViewRef.current;
     return {
       x: (clientX - (rect?.left ?? 0) - currentView.x) / currentView.scale,
       y: (clientY - (rect?.top ?? 0) - currentView.y) / currentView.scale,
     };
   };
 
+  const stopZoomBeforeInteraction = () => {
+    const wasZooming = zoomFrameRef.current !== null;
+    if (wasZooming) stopZoomAnimation();
+    const wasPanning = panIdleTimerRef.current !== null;
+    if (wasPanning) {
+      window.clearTimeout(panIdleTimerRef.current!);
+      panIdleTimerRef.current = null;
+      setIsPanning(false);
+    }
+    if (wasZooming || wasPanning) commitLiveView();
+  };
+
+  const beginCanvasPan = (event: ReactPointerEvent<HTMLDivElement>) => {
+    stopZoomBeforeInteraction();
+    const live = liveViewRef.current;
+    dragRef.current = {
+      kind: 'pan',
+      pointerId: event.pointerId,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      viewX: live.x,
+      viewY: live.y,
+      moved: false,
+    };
+    setIsPanning(true);
+    canvasRef.current?.setPointerCapture(event.pointerId);
+  };
+
   const beginNodeDrag = (event: ReactPointerEvent<HTMLDivElement>, node: WorldNode) => {
     if (event.button !== 0) return;
     event.stopPropagation();
     setMenu(null);
-    onSelectNode(node.id);
+    setNodeMenu(null);
+    stopZoomBeforeInteraction();
+    const alreadySelected = selectedNodeIds.includes(node.id);
+    const ids = alreadySelected ? selectedNodeIds : [node.id];
+    if (!alreadySelected) onSelectNodes([node.id], node.id);
     onSelectRelation(null);
     if (mode === 'explore') return;
-    onBeginTransaction();
+    const startPositions = new Map<number, { x: number; y: number }>();
+    for (const id of nodesMovedWith(world, ids)) {
+      const entry = world.nodes.find((candidate) => candidate.id === id);
+      if (entry) startPositions.set(id, { x: entry.x, y: entry.y });
+    }
     dragRef.current = {
       kind: 'node',
       pointerId: event.pointerId,
       clientX: event.clientX,
       clientY: event.clientY,
-      nodeId: node.id,
-      nodeX: node.x,
-      nodeY: node.y,
+      primaryId: node.id,
+      ids,
+      startPositions,
+      startScale: liveViewRef.current.scale,
       moved: false,
     };
-    setDragging(true);
     canvasRef.current?.setPointerCapture(event.pointerId);
   };
 
@@ -257,8 +423,9 @@ export function StudioCanvas({
     if (event.button !== 0 || mode === 'explore') return;
     event.stopPropagation();
     event.preventDefault();
+    stopZoomBeforeInteraction();
     const size = nodeVisualSize(node);
-    onSelectNode(node.id);
+    onSelectNodes([node.id], node.id);
     onBeginTransaction();
     dragRef.current = {
       kind: 'resize',
@@ -271,8 +438,8 @@ export function StudioCanvas({
       startHeight: size.height,
       startLeft: node.x - size.width / 2,
       startTop: node.y - size.height / 2,
+      startScale: liveViewRef.current.scale,
     };
-    setDragging(true);
     canvasRef.current?.setPointerCapture(event.pointerId);
   };
 
@@ -284,6 +451,7 @@ export function StudioCanvas({
     if (event.button !== 0 || mode === 'explore') return;
     event.preventDefault();
     event.stopPropagation();
+    stopZoomBeforeInteraction();
     onSelectNode(node.id);
     onSelectRelation(null);
     setConnection({ fromId: node.id, side, current: { x: node.x, y: node.y } });
@@ -291,28 +459,67 @@ export function StudioCanvas({
   };
 
   const handleCanvasPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return;
+    if (event.button !== 0 && event.button !== 1) return;
     if (
       (event.target as HTMLElement).closest(
-        '.world-node, .relation-hit, .relation-name, .relation-name-input, .canvas-create-menu, .empty-state, .bottom-timeline, .canvas-help',
+        '.world-node, .relation-hit, .relation-name, .relation-name-input, .canvas-create-menu, .node-layer-menu, .empty-state, .bottom-timeline, .canvas-help',
       )
     ) {
       return;
     }
     setMenu(null);
-    onSelectNode(null);
+    setNodeMenu(null);
+    stopZoomBeforeInteraction();
+    if (mode === 'explore' || event.button === 1 || spacePressedRef.current) {
+      event.preventDefault();
+      beginCanvasPan(event);
+      return;
+    }
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
     onSelectRelation(null);
     dragRef.current = {
-      kind: 'pan',
+      kind: 'marquee',
       pointerId: event.pointerId,
-      clientX: event.clientX,
-      clientY: event.clientY,
-      viewX: viewRef.current.x,
-      viewY: viewRef.current.y,
+      startX: x,
+      startY: y,
       moved: false,
     };
-    setDragging(true);
+    setSelectionBox({ x, y, width: 0, height: 0 });
     canvasRef.current?.setPointerCapture(event.pointerId);
+  };
+
+  const nodesInsideBox = (box: SelectionBox): number[] => {
+    const currentView = liveViewRef.current;
+    const left = Math.min(box.x, box.x + box.width);
+    const top = Math.min(box.y, box.y + box.height);
+    const right = Math.max(box.x, box.x + box.width);
+    const bottom = Math.max(box.y, box.y + box.height);
+    return world.nodes
+      .filter((node) => !isContainerNode(node))
+      .filter((node) => {
+        const size = nodeVisualSize(node);
+        const nodeLeft = currentView.x + (node.x - size.width / 2) * currentView.scale;
+        const nodeTop = currentView.y + (node.y - size.height / 2) * currentView.scale;
+        const nodeRight = nodeLeft + size.width * currentView.scale;
+        const nodeBottom = nodeTop + size.height * currentView.scale;
+        return nodeRight >= left && nodeLeft <= right && nodeBottom >= top && nodeTop <= bottom;
+      })
+      .map((node) => node.id);
+  };
+
+  const finishMarquee = (box: SelectionBox) => {
+    const width = Math.abs(box.width);
+    const height = Math.abs(box.height);
+    if (width < 3 && height < 3) {
+      onSelectNodes([], null);
+    } else {
+      const ids = nodesInsideBox(box);
+      onSelectNodes(ids, ids[0] ?? null);
+    }
+    setSelectionBox(null);
   };
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -326,22 +533,48 @@ export function StudioCanvas({
       const dx = event.clientX - drag.clientX;
       const dy = event.clientY - drag.clientY;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) drag.moved = true;
-      setView((current) => ({
-        ...current,
+      applyLiveView({
+        ...liveViewRef.current,
         x: drag.viewX + dx,
         y: drag.viewY + dy,
-      }));
+      });
+      return;
+    }
+    if (drag.kind === 'marquee') {
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const currentX = event.clientX - rect.left;
+      const currentY = event.clientY - rect.top;
+      if (Math.abs(currentX - drag.startX) > 3 || Math.abs(currentY - drag.startY) > 3) {
+        drag.moved = true;
+      }
+      setSelectionBox({
+        x: Math.min(drag.startX, currentX),
+        y: Math.min(drag.startY, currentY),
+        width: Math.abs(currentX - drag.startX),
+        height: Math.abs(currentY - drag.startY),
+      });
       return;
     }
     if (drag.kind === 'node') {
-      const dx = (event.clientX - drag.clientX) / viewRef.current.scale;
-      const dy = (event.clientY - drag.clientY) / viewRef.current.scale;
-      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) drag.moved = true;
-      onReplace((current) => moveNode(current, drag.nodeId, drag.nodeX + dx, drag.nodeY + dy));
+      const dx = (event.clientX - drag.clientX) / drag.startScale;
+      const dy = (event.clientY - drag.clientY) / drag.startScale;
+      if (!drag.moved && (Math.abs(dx) > 1 || Math.abs(dy) > 1)) {
+        drag.moved = true;
+        // Start the undo transaction on the first real movement so a plain
+        // click (for example, after editing Description) never adds history.
+        onBeginTransaction();
+      }
+      if (!drag.moved) return;
+      const targets = new Map<number, { x: number; y: number }>();
+      for (const [id, position] of drag.startPositions) {
+        targets.set(id, { x: position.x + dx, y: position.y + dy });
+      }
+      onReplace((current) => moveNodesTo(current, targets));
       return;
     }
-    const dx = (event.clientX - drag.clientX) / viewRef.current.scale;
-    const dy = (event.clientY - drag.clientY) / viewRef.current.scale;
+    const dx = (event.clientX - drag.clientX) / drag.startScale;
+    const dy = (event.clientY - drag.clientY) / drag.startScale;
     const left = drag.corner.includes('l') ? drag.startLeft + dx : drag.startLeft;
     const top = drag.corner.includes('t') ? drag.startTop + dy : drag.startTop;
     const width = drag.corner.includes('l') ? drag.startWidth - dx : drag.startWidth + dx;
@@ -382,22 +615,41 @@ export function StudioCanvas({
     const drag = dragRef.current;
     if (!drag) return;
     dragRef.current = null;
-    setDragging(false);
     releaseCapture(event.pointerId);
-    if (drag.kind === 'node') {
-      onReplace((current) => {
-        const node = current.nodes.find((entry) => entry.id === drag.nodeId);
-        if (!node || node.type === 'Space') return current;
-        const space = containingSpace(current, node);
-        return updateNode(current, node.id, (entry) => ({
-          ...entry,
-          parentId: space?.id,
-        }));
-      });
-      onEndTransaction();
-    } else if (drag.kind === 'resize') {
-      onEndTransaction();
+    if (drag.kind === 'pan') {
+      setIsPanning(false);
+      commitLiveView();
+      return;
     }
+    if (drag.kind === 'marquee') {
+      const rect = canvasRef.current?.getBoundingClientRect();
+      const currentX = rect ? event.clientX - rect.left : drag.startX;
+      const currentY = rect ? event.clientY - rect.top : drag.startY;
+      finishMarquee({
+        x: Math.min(drag.startX, currentX),
+        y: Math.min(drag.startY, currentY),
+        width: Math.abs(currentX - drag.startX),
+        height: Math.abs(currentY - drag.startY),
+      });
+      return;
+    }
+    if (drag.kind === 'node') {
+      if (drag.moved) {
+        onReplace((current) => {
+          let next = current;
+          for (const id of drag.ids) {
+            const node = next.nodes.find((entry) => entry.id === id);
+            if (!node || isContainerNode(node)) continue;
+            const space = containingSpace(next, node);
+            next = updateNode(next, id, (entry) => ({ ...entry, parentId: space?.id }));
+          }
+          return next;
+        });
+      }
+      onEndTransaction();
+      return;
+    }
+    onEndTransaction();
   };
 
   const releaseCapture = (pointerId: number) => {
@@ -406,50 +658,114 @@ export function StudioCanvas({
   };
 
   const handlePointerCancel = () => {
+    const drag = dragRef.current;
+    if (drag?.kind === 'pan') {
+      applyLiveView({ ...liveViewRef.current, x: drag.viewX, y: drag.viewY });
+      commitLiveView();
+    }
     dragRef.current = null;
-    setDragging(false);
+    setIsPanning(false);
+    setSelectionBox(null);
     setConnection(null);
     onCancelTransaction();
   };
 
-  const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const currentView = viewRef.current;
-    const nextScale = Math.min(
-      1.8,
-      Math.max(0.4, currentView.scale * Math.exp(-event.deltaY * 0.0012)),
-    );
-    const px = event.clientX - rect.left;
-    const py = event.clientY - rect.top;
-    setView(() => ({
-      scale: nextScale,
-      x: px - (px - currentView.x) * (nextScale / currentView.scale),
-      y: py - (py - currentView.y) * (nextScale / currentView.scale),
-    }));
-  };
-
   useEffect(() => {
-    if (!menu) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setMenu(null);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const animateZoom = () => {
+      const target = zoomTargetRef.current;
+      const current = liveViewRef.current;
+      const anchor = zoomAnchorRef.current;
+      let scale = current.scale + (target - current.scale) * ZOOM_DAMPING;
+      const done = Math.abs(target - scale) <= ZOOM_EPSILON;
+      if (done) scale = target;
+      const next = {
+        scale,
+        x: anchor.screenX - anchor.worldX * scale,
+        y: anchor.screenY - anchor.worldY * scale,
+      };
+      applyLiveView(next);
+      if (!done) {
+        zoomFrameRef.current = requestAnimationFrame(animateZoom);
+        return;
+      }
+      zoomFrameRef.current = null;
+      setView(() => ({ ...next }));
     };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [menu]);
+
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const delta = normalizeWheelDelta(event);
+      const isZoom = event.ctrlKey || event.metaKey;
+      if (!isZoom) {
+        if (zoomFrameRef.current !== null) {
+          stopZoomAnimation();
+        }
+        if (panIdleTimerRef.current !== null) window.clearTimeout(panIdleTimerRef.current);
+        const live = liveViewRef.current;
+        applyLiveView({ ...live, x: live.x - delta.x, y: live.y - delta.y });
+        setIsPanning(true);
+        panIdleTimerRef.current = window.setTimeout(() => {
+          panIdleTimerRef.current = null;
+          setIsPanning(false);
+          commitLiveView();
+        }, 140);
+        return;
+      }
+      if (panIdleTimerRef.current !== null) {
+        window.clearTimeout(panIdleTimerRef.current);
+        panIdleTimerRef.current = null;
+        setIsPanning(false);
+      }
+      const px = event.clientX - rect.left;
+      const py = event.clientY - rect.top;
+      const live = liveViewRef.current;
+      zoomAnchorRef.current = {
+        screenX: px,
+        screenY: py,
+        worldX: (px - live.x) / live.scale,
+        worldY: (py - live.y) / live.scale,
+      };
+      zoomTargetRef.current = Math.min(
+        ZOOM_MAX,
+        Math.max(ZOOM_MIN, zoomTargetRef.current - delta.y * ZOOM_WHEEL_GAIN),
+      );
+      if (zoomFrameRef.current === null) {
+        zoomFrameRef.current = requestAnimationFrame(animateZoom);
+      }
+    };
+
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+    return () => canvas.removeEventListener('wheel', onWheel);
+  }, [applyLiveView, commitLiveView, setView, stopZoomAnimation]);
 
   const openMenu = (event: React.MouseEvent<HTMLDivElement>) => {
     if (mode !== 'create') return;
     event.preventDefault();
+    setMenu(null);
     const rect = event.currentTarget.getBoundingClientRect();
-    const x = Math.min(event.clientX - rect.left, rect.width - 200);
-    const y = Math.min(event.clientY - rect.top, rect.height - 220);
+    const x = Math.max(0, Math.min(event.clientX - rect.left, rect.width - 200));
+    const y = Math.max(0, Math.min(event.clientY - rect.top, rect.height - 220));
+    const nodeElement = (event.target as HTMLElement).closest<HTMLElement>('.world-node');
+    const nodeId = Number(nodeElement?.dataset.nodeId);
+    if (nodeElement && Number.isFinite(nodeId)) {
+      if (!selectedNodeIds.includes(nodeId)) onSelectNodes([nodeId], nodeId);
+      setNodeMenu({
+        id: nodeId,
+        x: Math.max(0, Math.min(event.clientX - rect.left, rect.width - 176)),
+        y: Math.max(0, Math.min(event.clientY - rect.top, rect.height - 170)),
+      });
+      return;
+    }
+    const currentView = liveViewRef.current;
     setMenu({
       x,
       y,
-      worldX: (x - viewRef.current.x) / viewRef.current.scale,
-      worldY: (y - viewRef.current.y) / viewRef.current.scale,
+      worldX: (x - currentView.x) / currentView.scale,
+      worldY: (y - currentView.y) / currentView.scale,
     });
   };
 
@@ -486,8 +802,8 @@ export function StudioCanvas({
 
   const renderNode = (node: WorldNode) => {
     const size = nodeVisualSize(node);
-    const container = node.type === 'Space' || node.type === 'Place' || node.type === 'Category';
-    const selected = selectedNodeId === node.id;
+    const container = isContainerNode(node);
+    const selected = selectedNodeIds.includes(node.id);
     return (
       <div
         key={node.id}
@@ -500,6 +816,9 @@ export function StudioCanvas({
         style={{
           left: node.x,
           top: node.y,
+          // Semantic defaults match the Make source: frames sit at 0 and
+          // ordinary nodes at 3, with relation lines at 2 between them.
+          zIndex: nodeLayer(node),
           ...(container
             ? {
                 width: size.width,
@@ -635,7 +954,21 @@ export function StudioCanvas({
   return (
     <div
       ref={canvasRef}
-      className={`canvas ${mode} ${dragging ? 'is-panning' : ''}`}
+      className={`canvas ${mode} ${isPanning ? 'is-panning' : ''} ${
+        selectionBox ? 'is-selecting' : ''
+      }`}
+      onPointerDownCapture={() => {
+        // Commit an open inspector textarea before a node/blank press changes
+        // the selection. The native mousedown blur normally fires after
+        // pointerdown, when the inspector may already be unmounting.
+        const active = document.activeElement;
+        if (
+          active instanceof HTMLElement &&
+          (active.tagName === 'TEXTAREA' || active.tagName === 'INPUT')
+        ) {
+          active.blur();
+        }
+      }}
       onContextMenu={openMenu}
       onDragOver={(event) => {
         if (
@@ -647,7 +980,6 @@ export function StudioCanvas({
         }
       }}
       onDrop={handleDrop}
-      onWheel={handleWheel}
       onPointerDown={handleCanvasPointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -714,13 +1046,42 @@ export function StudioCanvas({
         </div>
       )}
 
-      <div
-        ref={worldRef}
-        className="world"
-        style={{
-          transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
-        }}
-      >
+      {nodeMenu && (
+        <div
+          className="node-layer-menu"
+          style={{ left: nodeMenu.x, top: nodeMenu.y }}
+          onPointerDown={(event) => event.stopPropagation()}
+          role="menu"
+          aria-label="Node layer"
+        >
+          <div className="context-title">
+            <span>Layer</span>
+            <small>order</small>
+          </div>
+          {(
+            [
+              ['up', 'Bring forward'],
+              ['down', 'Send backward'],
+              ['top', 'Bring to front'],
+              ['bottom', 'Send to back'],
+            ] as const
+          ).map(([action, label]) => (
+            <button
+              type="button"
+              key={action}
+              role="menuitem"
+              onClick={() => {
+                onChangeLayer(nodeMenu.id, action);
+                setNodeMenu(null);
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div ref={worldRef} className="world">
         <svg className="relation-layer" aria-hidden="true">
           {relations.map(({ relation, geometry }) => (
             <g key={relation.id} className={selectedRelationId === relation.id ? 'active' : ''}>
@@ -811,6 +1172,18 @@ export function StudioCanvas({
         {world.nodes.map(renderNode)}
       </div>
 
+      {selectionBox && (
+        <div
+          className="selection-marquee"
+          style={{
+            left: selectionBox.x,
+            top: selectionBox.y,
+            width: selectionBox.width,
+            height: selectionBox.height,
+          }}
+        />
+      )}
+
       {world.nodes.length === 0 && (
         <div className="empty-state">
           <span className="empty-orbit" aria-hidden="true">
@@ -835,8 +1208,9 @@ export function StudioCanvas({
       {timeline}
 
       <div className="canvas-help">
-        <span>Drag to pan</span>
-        <span>Scroll to zoom</span>
+        <span>Two-finger scroll to pan</span>
+        <span>Pinch to zoom</span>
+        {mode === 'create' && <span>Drag empty canvas to select</span>}
         {mode === 'create' && <span>Right-click to add</span>}
       </div>
     </div>

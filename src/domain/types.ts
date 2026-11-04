@@ -200,6 +200,7 @@ export interface WorldNode {
   sourceId?: number;
   icon?: ElementIcon;
   parentId?: number;
+  layer?: number;
   backgroundColor?: string;
   tags?: string[];
   imageSrc?: string;

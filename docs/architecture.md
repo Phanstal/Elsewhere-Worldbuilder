@@ -11,7 +11,7 @@ Elsewhere 是一个单窗口、本地优先的 macOS 世界观构建工具：
 - 以 `.elsew` JSON 文件导入 / 导出，可导出整张世界为 PNG；
 - 以**未签名、未公证**的 `.app` / `.dmg` 形式个人分发；
 - 当前在 Windows 上开发，通过 GitHub Actions 的 macOS runner 产出 macOS 构建，最终由用户在真机验收；
-- 当前版本 v0.1.4，对应 Figma Make **Version 33** 设计；
+- 当前版本 v0.1.5，对应 Figma Make **Version 35** 设计；
 - 为未来的 iOS / Android 版本保留同一套领域模型和存储端口，不把业务逻辑绑死在桌面壳上。
 
 原型来自 [Figma Make](https://www.figma.com/make/aeRRMdDfVsyuJvz2Dy1DV3/Build-Elsewhere-Worldbuilding-Studio?t=Y0SPn1WcqeAIuBMw-1)。Figma MCP 不支持 Make 文件，因此视觉契约以冻结在 `docs/design/` 的原型 CSS、导出的 `.elsew` 样例和截图为依据，而不是接入 Figma MCP。
@@ -203,7 +203,7 @@ macOS 数据位置：
 ### 5.1 布局
 
 - 顶部工具栏 58px：品牌、世界名下拉、撤销 / 重做、缩放、Fit、保存状态、Create/Explore 切换、`.elsew` 保存、PNG 导出；
-- 左侧栏 210px：Space / Element / Event 三张创建卡、底部 `Search world…` 与 `All Elements` 抽屉；
+- 左侧栏 210px：顶部 `All Elements` 抽屉入口、下方 Space / Element / Event 三张创建卡；
 - 中间画布：蓝灰点阵、世界边界、Space 区域、关系线、节点；
 - 右侧检查器 270px：选中节点或关系时显示；未选中时显示空状态；
 - 底部世界时间轴：最多 3 个时刻，支持切换、重命名、删除、添加；
@@ -213,16 +213,19 @@ macOS 数据位置：
 
 ### 5.2 画布
 
-- 拖拽空白区域平移；滚轮 / 触控板缩放，缩放范围 0.3–2；
-- 拖动节点移动；拖动 Space 时子节点一起移动；拖动 Space 右下角缩放；
+- 双指滚动（非 Ctrl 滚轮）平移画布；Ctrl / ⌘ + 滚轮或触控板捏合缩放，范围 0.4–1.8，缩放锚定指针；
+- 空白处按住左键拖拽出现选择框，框选可多选非容器节点；选中多个后拖动任一选中节点，整组一起移动，一次撤销；
+- 拖动 Space 时子节点一起移动；拖动 Space 右下角缩放；Space 以 80% 不透明度显示；
 - 从节点左右端口拖出关系线，落在目标节点上建立关系；
 - 双击节点标题就地改名；双击关系标签改名；
 - 空白点击取消选择；Esc 关闭右键菜单 / Quick add / 浮层；
 - 右键空白打开创建菜单（Space / Element / Event / Image），在点击位置创建；
-- 拖入图片文件时，在落点创建 Image 节点；检查器也可为 Element 或 Space 选择图片；
-- 双击节点标题、双击关系标签就地改名；拖入 Space 自动设置父级。
+- 右键节点打开层级菜单（Bring forward / Send backward / Bring to front / Send to back），`layer` 随世界保存；
+- Cmd / Ctrl + C / V 复制、粘贴选中的节点，副本偏移 32px 并重新映射父级；
+- 检查器 Description 在失焦或点击外部时提交，并作为单步撤销；
+- 拖入图片文件时，在落点创建 Image 节点；检查器也可为 Element 或 Space 选择图片；拖入 Space 自动设置父级。
 
-实现上，画布用一个 `transform: translate(...) scale(...)` 的世界层承载 SVG 关系线和绝对定位节点；指针事件统一在画布容器捕获，按 `dragRef` 状态分派 pan / node / resize，避免每个节点各写一套全局监听。关系路径同时写内联 `fill` / `stroke` 属性，PNG 导出时不会丢失样式。
+实现上，画布用一个世界层承载 SVG 关系线和绝对定位节点。滚轮 / 捏合缩放由原生非 passive 监听器接收，`requestAnimationFrame` 直接写 `translate3d(...) scale(...)`，过程中不触发 React 渲染；动画结束后才把最终 `view` 同步回 React 并更新工具栏百分比。双指平移同样直接写 transform，空闲 140ms 后再提交状态。指针事件统一在画布容器捕获，按 `dragRef` 状态分派 pan / node / resize / marquee。关系路径同时写内联 `fill` / `stroke` 属性，PNG 导出时不会丢失样式。
 
 ### 5.3 撤销与事务
 
@@ -317,7 +320,7 @@ macOS 数据位置：
 
 - 领域层纯 TypeScript，不依赖 DOM；节点、别名、关系、`.elsew` 校验可直接复用；
 - `WorldRepository` 是端口；移动端可以换 SQLite（Tauri 2 mobile）或平台数据库，不改 UI 业务；
-- 画布手势层封装在 `StudioCanvas.tsx`，后续可补双指缩放 / 长按菜单；
+- 画布手势层封装在 `StudioCanvas.tsx`，已支持双指平移 / 捏合缩放，后续可补长按菜单；
 - 布局已有窄屏断点，侧栏、检查器可转为抽屉；
 - 导出层分成“生成数据”和“保存到平台”两步，移动端可接分享面板。
 
@@ -325,8 +328,8 @@ macOS 数据位置：
 
 ## 10. 测试策略
 
-- **单元测试**：23 个用例，覆盖创建、移动容器子节点、别名、关系、计数、边界、fitView、快照切换、容器包含关系、v2 字段与快照序列化、旧文件补 `Origin`、合法 / 非法导入；
-- **E2E**：11 个用例，覆盖创建世界、编辑并刷新回读、改名、别名、连线与关系改名、`.elsew` / PNG 下载、导入、Explore、缩放把手、时间快照、删除世界、窄屏 Quick add；
+- **单元测试**：28 个用例，覆盖创建、移动容器子节点、组移动、层级、复制粘贴、移除、别名、关系、计数、边界、fitView、快照切换、容器包含关系、v2 字段（含 `layer`）与快照序列化、旧文件补 `Origin`、合法 / 非法导入；
+- **E2E**：16 个用例，覆盖创建世界、编辑并刷新回读、改名、别名、连线与关系改名、`.elsew` / PNG 下载、导入、Explore、缩放把手、时间快照、删除世界、窄屏 Quick add，以及框选组移动、复制粘贴、层级菜单、Space 透明度、侧栏结构、双指平移 / 捏合缩放、Description 外部点击保存；
 - **原生验证**：在 Windows 上用 WebView2 CDP 连接真实 Tauri 窗口，新建 / 改名 / 自动保存，再直接查询 `elsewhere.db` 验证 SQLite 数据；macOS 的菜单、原生透明标题栏拖动、保存对话框由真机验收覆盖；
 - **CI**：Ubuntu 跑前端与 Playwright（Chromium），macOS 跑 rustfmt / clippy / cargo test，并打 universal `.app`。
 
@@ -351,7 +354,7 @@ macOS 数据位置：
 | 画布实现 | DOM + SVG，不用 Canvas/WebGL           | 节点是富文本卡片、需要可访问的输入框和 CSS 视觉；数量级（几十到几百）不需要 WebGL |
 | 状态管理 | 单个 `useWorldEditor` + 不可变 World   | 撤销 / 重做、保存、事务集中，避免引入全局状态库                                   |
 | 持久化   | SQLite（桌面）+ localStorage（浏览器） | 本地优先、无服务；浏览器模式让 E2E 不依赖原生壳                                   |
-| 世界时间 | 整图快照，最多 3 个                    | 与 Figma Version 33 的时间轴一致；实现简单、离线可靠，不需要版本图数据库          |
+| 世界时间 | 整图快照，最多 3 个                    | 与 Figma Version 35 的时间轴一致；实现简单、离线可靠，不需要版本图数据库          |
 | 文件格式 | 显式 `format/version` JSON             | 可读、可手工修复、可跨平台；比二进制或数据库文件更适合分享                        |
 | 字体     | Georgia + 系统无衬线 + 等宽小标签      | 原型是温暖的编辑风格，不引入网络字体，离线可用                                    |
 | 图片导出 | `html-to-image` 克隆世界层             | 与屏幕呈现一致，开发成本低；无需维护第二套 SVG 渲染器                             |

@@ -3,18 +3,21 @@ import { CREATE_TYPES, type CreateType, type World, type WorldNode } from '../..
 import {
   activateSnapshot,
   addRelation,
+  changeNodeLayer,
   containingSpace,
   createAlias,
   createNode,
   filenameForWorld,
   fitView,
   normalizeWorldSnapshots,
-  removeNode,
+  pasteNodes,
+  removeNodes,
   removeRelation,
   snapshotIndex,
   syncActiveSnapshot,
   updateNode,
   worldBounds,
+  type LayerAction,
   type ViewTransform,
 } from '../../domain/world';
 import { serializeElsew } from '../../domain/elsew';
@@ -61,10 +64,10 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
   const { world, commit: pushCommit, replace: pushReplace } = editor;
   const [mode, setMode] = useState<StudioMode>('create');
   const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null);
+  const [selectedNodeIds, setSelectedNodeIds] = useState<number[]>([]);
   const [selectedRelationId, setSelectedRelationId] = useState<number | null>(null);
   const [allNodesOpen, setAllNodesOpen] = useState(false);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
-  const [search, setSearch] = useState('');
   const [viewport, setViewport] = useState<CanvasSize>({ width: 0, height: 0 });
   const [view, setView] = useState<ViewTransform>({ x: 0, y: 0, scale: 0.9 });
   const [toast, setToast] = useState<string | null>(null);
@@ -73,11 +76,25 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
   const activeIndexRef = useRef(snapshotIndex(preparedWorld));
   const fittedRef = useRef(false);
   const toastTimerRef = useRef<number | null>(null);
+  const clipboardRef = useRef<{ nodes: WorldNode[]; pastes: number }>({ nodes: [], pastes: 0 });
 
   const showToast = useCallback((message: string) => {
     setToast(message);
     if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current);
     toastTimerRef.current = window.setTimeout(() => setToast(null), 3200);
+  }, []);
+
+  const selectNodes = useCallback((ids: number[], primary?: number | null) => {
+    const unique = [...new Set(ids)];
+    setSelectedNodeIds(unique);
+    setSelectedNodeId(primary !== undefined ? primary : (unique[0] ?? null));
+    if (unique.length > 0) setSelectedRelationId(null);
+  }, []);
+
+  const selectNode = useCallback((id: number | null) => {
+    setSelectedNodeIds(id === null ? [] : [id]);
+    setSelectedNodeId(id);
+    if (id !== null) setSelectedRelationId(null);
   }, []);
 
   useEffect(() => {
@@ -133,6 +150,10 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
   const selectedRelation =
     world.relations.find((relation) => relation.id === selectedRelationId) ?? null;
   const snapshots = world.snapshots ?? [];
+  const activeSelectedNodeIds = useMemo(() => {
+    const ids = new Set(world.nodes.map((node) => node.id));
+    return selectedNodeIds.filter((id) => ids.has(id));
+  }, [selectedNodeIds, world.nodes]);
 
   const fitCanvas = useCallback(() => {
     if (viewport.width === 0) return;
@@ -210,13 +231,12 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
       const space = type === 'Space' ? undefined : containingSpace(world, node);
       const nextNode = space ? { ...node, parentId: space.id } : node;
       commit((current) => ({ ...current, nodes: [...current.nodes, nextNode] }));
-      setSelectedNodeId(nextNode.id);
-      setSelectedRelationId(null);
+      selectNode(nextNode.id);
       setMode('create');
       setAllNodesOpen(false);
       setQuickAddOpen(false);
     },
-    [commit, viewportCenter, world],
+    [commit, selectNode, viewportCenter, world],
   );
 
   const handleAddImage = useCallback(
@@ -227,14 +247,13 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
         const space = containingSpace(world, node);
         const imageNode: WorldNode = { ...node, imageSrc: source, parentId: space?.id };
         commit((current) => ({ ...current, nodes: [...current.nodes, imageNode] }));
-        setSelectedNodeId(imageNode.id);
-        setSelectedRelationId(null);
+        selectNode(imageNode.id);
         showToast('Image added');
       } catch {
         showToast('The image could not be read.');
       }
     },
-    [commit, showToast, world],
+    [commit, selectNode, showToast, world],
   );
 
   const handleSetImage = useCallback(
@@ -265,16 +284,22 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
       y: source.y + 90,
     });
     commit((current) => ({ ...current, nodes: [...current.nodes, alias.node] }));
-    setSelectedNodeId(alias.node.id);
+    selectNode(alias.node.id);
     showToast('Alias created');
-  }, [commit, selectedNode, showToast, world]);
+  }, [commit, selectNode, selectedNode, showToast, world]);
 
   const handleDeleteNode = useCallback(() => {
-    if (!selectedNodeId) return;
-    commit((current) => removeNode(current, selectedNodeId));
+    const ids = activeSelectedNodeIds.length
+      ? activeSelectedNodeIds
+      : selectedNodeId
+        ? [selectedNodeId]
+        : [];
+    if (ids.length === 0) return;
+    commit((current) => removeNodes(current, ids));
+    setSelectedNodeIds([]);
     setSelectedNodeId(null);
-    showToast('Node removed');
-  }, [commit, selectedNodeId, showToast]);
+    showToast(ids.length === 1 ? 'Node removed' : `${ids.length} nodes removed`);
+  }, [activeSelectedNodeIds, commit, selectedNodeId, showToast]);
 
   const handleDeleteRelation = useCallback(() => {
     if (!selectedRelationId) return;
@@ -282,6 +307,13 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
     setSelectedRelationId(null);
     showToast('Relation removed');
   }, [commit, selectedRelationId, showToast]);
+
+  const handleChangeLayer = useCallback(
+    (id: number, action: LayerAction) => {
+      commit((current) => changeNodeLayer(current, id, action));
+    },
+    [commit],
+  );
 
   const handleAddRelation = useCallback(
     (from: number, to: number) => {
@@ -294,6 +326,7 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
       const created = next.relations[next.relations.length - 1];
       setSelectedRelationId(created.id);
       setSelectedNodeId(null);
+      setSelectedNodeIds([]);
       showToast('Nodes connected');
     },
     [commit, showToast, world],
@@ -306,6 +339,7 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
       activeIndexRef.current = index;
       setActiveTimeIndex(index);
       setSelectedNodeId(null);
+      setSelectedNodeIds([]);
       setSelectedRelationId(null);
       editor.commit(() => next);
     },
@@ -339,6 +373,7 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
     activeIndexRef.current = index;
     setActiveTimeIndex(index);
     setSelectedNodeId(null);
+    setSelectedNodeIds([]);
     setSelectedRelationId(null);
     editor.commit(() => next);
   }, [editor, world]);
@@ -363,6 +398,7 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
     activeIndexRef.current = nextIndex;
     setActiveTimeIndex(nextIndex);
     setSelectedNodeId(null);
+    setSelectedNodeIds([]);
     setSelectedRelationId(null);
     editor.commit(() => next);
     showToast('Time node removed');
@@ -419,7 +455,8 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
     setMode(next);
     setAllNodesOpen(false);
     setSelectedRelationId(null);
-    if (next === 'create') setSelectedNodeId(null);
+    setSelectedNodeId(null);
+    setSelectedNodeIds([]);
   }, []);
 
   useEffect(() => {
@@ -441,6 +478,7 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
           return;
         }
         setSelectedNodeId(null);
+        setSelectedNodeIds([]);
         setSelectedRelationId(null);
         return;
       }
@@ -519,7 +557,46 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
 
       if (editingText) return;
 
-      if ((event.key === 'Delete' || event.key === 'Backspace') && selectedNodeId) {
+      if (
+        command &&
+        mode === 'create' &&
+        event.key.toLowerCase() === 'c' &&
+        activeSelectedNodeIds.length > 0
+      ) {
+        event.preventDefault();
+        clipboardRef.current = {
+          nodes: structuredClone(
+            world.nodes.filter((node) => activeSelectedNodeIds.includes(node.id)),
+          ),
+          pastes: 0,
+        };
+        return;
+      }
+      if (
+        command &&
+        mode === 'create' &&
+        event.key.toLowerCase() === 'v' &&
+        clipboardRef.current.nodes.length > 0
+      ) {
+        event.preventDefault();
+        const pastes = clipboardRef.current.pastes + 1;
+        const result = pasteNodes(world, clipboardRef.current.nodes, 32 * pastes);
+        clipboardRef.current.pastes = pastes;
+        commit(() => result.world);
+        selectNodes(
+          result.nodes.map((node) => node.id),
+          result.nodes[0]?.id ?? null,
+        );
+        showToast(
+          result.nodes.length === 1 ? 'Node pasted' : `${result.nodes.length} nodes pasted`,
+        );
+        return;
+      }
+
+      if (
+        (event.key === 'Delete' || event.key === 'Backspace') &&
+        (activeSelectedNodeIds.length > 0 || selectedNodeId)
+      ) {
         event.preventDefault();
         handleDeleteNode();
         return;
@@ -540,20 +617,24 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
+    activeSelectedNodeIds,
     allNodesOpen,
+    commit,
     editor,
     fitCanvas,
     handleCreateAlias,
     handleDeleteNode,
     handleDeleteRelation,
+    mode,
     onNewWorld,
     quickAddOpen,
     saveElsew,
     savePng,
+    selectNodes,
     selectedNodeId,
     selectedRelationId,
     showToast,
-    world.nodes,
+    world,
     zoomBy,
   ]);
 
@@ -626,14 +707,12 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
           <StudioSidebar
             nodes={world.nodes}
             selectedNodeId={selectedNodeId}
+            selectedNodeIds={activeSelectedNodeIds}
             allNodesOpen={allNodesOpen}
-            search={search}
-            onSearch={setSearch}
             onToggleAllNodes={() => setAllNodesOpen((open) => !open)}
             onAdd={handleAddNode}
             onSelectNode={(id) => {
-              setSelectedNodeId(id);
-              setSelectedRelationId(null);
+              selectNode(id);
               setMode('create');
               focusNode(id);
             }}
@@ -645,16 +724,18 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
           view={view}
           setView={setView}
           onViewportChange={handleViewportChange}
-          selectedNodeId={selectedNodeId}
+          selectedNodeIds={activeSelectedNodeIds}
           selectedRelationId={selectedRelationId}
-          onSelectNode={(id) => {
-            setSelectedNodeId(id);
-            if (id !== null) setSelectedRelationId(null);
-          }}
+          onSelectNode={selectNode}
+          onSelectNodes={selectNodes}
           onSelectRelation={(id) => {
             setSelectedRelationId(id);
-            if (id !== null) setSelectedNodeId(null);
+            if (id !== null) {
+              setSelectedNodeId(null);
+              setSelectedNodeIds([]);
+            }
           }}
+          onChangeLayer={handleChangeLayer}
           onBeginTransaction={editor.beginTransaction}
           onEndTransaction={editor.endTransaction}
           onCancelTransaction={editor.cancelTransaction}
@@ -664,7 +745,7 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
           onAddImage={(file, x, y) => void handleAddImage(file, x, y)}
           onAddRelation={handleAddRelation}
           onOpenNode={(id) => {
-            setSelectedNodeId(id);
+            selectNode(id);
             setSelectedRelationId(null);
           }}
           worldRef={worldRef}
@@ -691,6 +772,7 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
             world={world}
             node={selectedNode}
             relation={selectedRelation}
+            selectionCount={activeSelectedNodeIds.length}
             onBeginTransaction={editor.beginTransaction}
             onEndTransaction={editor.endTransaction}
             onReplace={replace}
@@ -702,6 +784,7 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
             onSetImage={(file) => void handleSetImage(file)}
             onClose={() => {
               setSelectedNodeId(null);
+              setSelectedNodeIds([]);
               setSelectedRelationId(null);
             }}
           />
@@ -709,7 +792,14 @@ export function WorldStudio({ initialWorld, repository, onBack, onNewWorld }: Wo
       </div>
 
       {mode === 'explore' && selectedNode && (
-        <ExplorePanel world={world} node={selectedNode} onClose={() => setSelectedNodeId(null)} />
+        <ExplorePanel
+          world={world}
+          node={selectedNode}
+          onClose={() => {
+            setSelectedNodeId(null);
+            setSelectedNodeIds([]);
+          }}
+        />
       )}
 
       {quickAddOpen && (

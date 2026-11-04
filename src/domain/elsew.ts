@@ -78,6 +78,7 @@ function serializeNode(node: WorldNode): Record<string, unknown> {
   if (node.sourceId !== undefined) serialized.sourceId = node.sourceId;
   if (node.icon !== undefined) serialized.icon = node.icon;
   if (node.parentId !== undefined) serialized.parentId = node.parentId;
+  if (node.layer !== undefined) serialized.layer = node.layer;
   if (node.backgroundColor !== undefined) serialized.backgroundColor = node.backgroundColor;
   if (node.tags !== undefined && node.tags.length > 0) serialized.tags = node.tags;
   if (node.imageSrc !== undefined) serialized.imageSrc = node.imageSrc;
@@ -174,6 +175,9 @@ function parseGraph(source: Record<string, unknown>, now: number, startIndex = 0
     if (backgroundColor) parsed.backgroundColor = backgroundColor;
     if (typeof node.parentId === 'number' && Number.isFinite(node.parentId)) {
       parsed.parentId = Math.round(node.parentId);
+    }
+    if (typeof node.layer === 'number' && Number.isFinite(node.layer)) {
+      parsed.layer = Math.min(100_000, Math.max(-100_000, Math.round(node.layer)));
     }
     nodes.push(parsed);
   });

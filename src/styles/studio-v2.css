@@ -191,7 +191,7 @@
 
 .studio-v2 .sidebar {
   z-index: 40;
-  padding: 20px 14px 112px;
+  padding: 20px 14px 24px;
   overflow: visible;
 }
 
@@ -279,41 +279,9 @@
   background: #e5eaef;
 }
 
-.studio-v2 .sidebar-bottom {
-  position: absolute;
-  right: 12px;
-  bottom: 14px;
-  left: 12px;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.studio-v2 .global-search {
-  display: flex;
-  align-items: center;
-  height: 34px;
-  padding: 0 9px;
-  gap: 7px;
-  border: 1px solid #d8dcd8;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.68);
-  color: #8d9691;
-}
-
-.studio-v2 .global-search input {
+.studio-v2 .sidebar > .outline-trigger {
   width: 100%;
-  min-width: 0;
-  border: 0;
-  background: transparent;
-  color: #4f5954;
-  font-size: 9px;
-  outline: none;
-}
-
-.studio-v2 .global-search input::placeholder {
-  color: #a2aaa5;
+  margin-bottom: 16px;
 }
 
 .studio-v2 .outline-trigger {
@@ -347,8 +315,9 @@
 
 .studio-v2 .outline-drawer {
   position: absolute;
+  top: 64px;
   z-index: 60;
-  bottom: 0;
+  bottom: auto;
   left: calc(100% - 12px);
   width: 235px;
   max-height: 420px;
@@ -423,15 +392,18 @@
 
 .studio-v2 .canvas {
   z-index: 1;
-  cursor: grab;
+  cursor: default;
   background-color: #eef1f1;
   background-image: radial-gradient(rgba(118, 135, 140, 0.24) 0.7px, transparent 0.8px);
   background-size: 22px 22px;
 }
 
-.studio-v2 .canvas:active,
 .studio-v2 .canvas.is-panning {
   cursor: grabbing;
+}
+
+.studio-v2 .canvas.is-selecting {
+  cursor: crosshair;
 }
 
 .studio-v2 .canvas::after {
@@ -456,11 +428,16 @@
 
 .studio-v2 .world {
   transition: none;
+  /* The canvas transform is written directly by requestAnimationFrame during
+     pan/zoom, so keep the layer on the GPU compositor. */
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .studio-v2 .world-node {
   border-color: rgba(199, 206, 204, 0.85);
   box-shadow: 0 12px 35px rgba(48, 70, 84, 0.07);
+  user-select: none;
 }
 
 .studio-v2 .world-node:not(.shape-space) {
@@ -469,6 +446,7 @@
 
 .studio-v2 .world-node.shape-space {
   z-index: 0;
+  opacity: 0.8;
   padding: 0;
   border-color: rgba(123, 146, 154, 0.42);
   border-radius: 18px;
@@ -706,6 +684,53 @@
   border-radius: 10px;
   background: rgba(250, 251, 249, 0.97);
   box-shadow: 0 16px 45px rgba(44, 63, 70, 0.16);
+}
+
+.studio-v2 .selection-marquee {
+  position: absolute;
+  z-index: 55;
+  border: 1px solid #8fa9b8;
+  border-radius: 2px;
+  background: rgba(143, 169, 184, 0.12);
+  pointer-events: none;
+}
+
+.studio-v2 .node-layer-menu {
+  position: absolute;
+  z-index: 60;
+  width: 164px;
+  padding: 6px;
+  border: 1px solid #d2d9d6;
+  border-radius: 10px;
+  background: rgba(247, 249, 248, 0.98);
+  box-shadow: 0 16px 45px rgba(44, 63, 70, 0.16);
+}
+
+.studio-v2 .node-layer-menu button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  color: #56625c;
+  font-size: 10px;
+  text-align: left;
+}
+
+.studio-v2 .node-layer-menu button:hover {
+  background: #e8edeb;
+}
+
+.studio-v2 .multi-selection-note {
+  margin: 0 0 16px;
+  padding: 9px 10px;
+  border: 1px solid rgba(143, 169, 184, 0.35);
+  border-radius: 8px;
+  background: rgba(143, 169, 184, 0.1);
+  color: #667a84;
+  font-size: 8px;
+  line-height: 1.45;
 }
 
 .studio-v2 .context-title {

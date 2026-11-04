@@ -80,6 +80,7 @@ describe('elsew file format', () => {
       ...node,
       icon: 'faction',
       parentId: spaceId,
+      layer: 7,
       tags: ['old-roads', 'keepers'],
     }));
     world = syncActiveSnapshot(world);
@@ -109,6 +110,7 @@ describe('elsew file format', () => {
       type: 'Element',
       icon: 'faction',
       parentId: spaceId,
+      layer: 7,
       tags: ['old-roads', 'keepers'],
     });
     expect(parsed.activeSnapshotId).toBe('time-2');
