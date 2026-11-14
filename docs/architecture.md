@@ -2,15 +2,15 @@
 
 ## 1. 目标与约束
 
-Elsewhere 是一个单窗口、本地优先的 macOS 世界观构建工具：
+Elsewhere 是一个单窗口、本地优先的 macOS / Windows 世界观构建工具：
 
 - 在一张可平移、可缩放的空间画布上摆放空间（Space）、元素（Element）与事件（Event）；
 - 用世界时间（最多 3 个快照）记录同一世界在不同时刻的状态；
 - 用别名表达同一事物的不同侧面，用关系线表达它们之间的联系；
 - 所有数据只保存在本机，无账号、无云同步、无遥测；
 - 以 `.elsew` JSON 文件导入 / 导出，可导出整张世界为 PNG；
-- 以**未签名、未公证**的 `.app` / `.dmg` 形式个人分发；
-- 当前在 Windows 上开发，通过 GitHub Actions 的 macOS runner 产出 macOS 构建，最终由用户在真机验收；
+- 以**未签名、未公证**的 `.app` / `.dmg`（macOS）与 `.exe` / `.msi`（Windows x64）形式个人分发；
+- 当前在 Windows 上开发，通过 GitHub Actions 的 macOS runner 产出 macOS 构建、Windows runner 产出 Windows 构建，最终由用户在真机验收；
 - 当前版本 v0.1.5，对应 Figma Make **Version 35** 设计；
 - 为未来的 iOS / Android 版本保留同一套领域模型和存储端口，不把业务逻辑绑死在桌面壳上。
 
@@ -181,6 +181,12 @@ macOS 数据位置：
 ~/Library/Application Support/com.phanstal.elsewhere/elsewhere.db
 ```
 
+Windows 数据位置：
+
+```text
+%APPDATA%\com.phanstal.elsewhere\elsewhere.db
+```
+
 删除应用不会删除数据库；需要彻底清理时手动删除该目录。
 
 ### 4.3 自动保存
@@ -331,7 +337,7 @@ macOS 数据位置：
 - **单元测试**：28 个用例，覆盖创建、移动容器子节点、组移动、层级、复制粘贴、移除、别名、关系、计数、边界、fitView、快照切换、容器包含关系、v2 字段（含 `layer`）与快照序列化、旧文件补 `Origin`、合法 / 非法导入；
 - **E2E**：17 个用例，覆盖创建世界、编辑并刷新回读、改名、别名、连线与关系改名、`.elsew` / PNG 下载、导入、Explore、缩放把手、时间快照、删除世界、窄屏 Quick add，以及框选组移动、复制粘贴、层级菜单、Space 透明度、侧栏结构、双指平移 / 捏合缩放、Description 外部点击保存；
 - **原生验证**：在 Windows 上用 WebView2 CDP 连接真实 Tauri 窗口，新建 / 改名 / 自动保存，再直接查询 `elsewhere.db` 验证 SQLite 数据；macOS 的菜单、原生透明标题栏拖动、保存对话框由真机验收覆盖；
-- **CI**：Ubuntu 跑前端与 Playwright（Chromium），macOS 跑 rustfmt / clippy / cargo test，并打 universal `.app`。
+- **CI**：Ubuntu 跑前端与 Playwright（Chromium），macOS 跑 rustfmt / clippy / cargo test，并打 universal `.app`；Windows Release 工作流在 `windows-latest` 上打 x64 NSIS / MSI。
 
 ## 11. 已知限制与取舍
 

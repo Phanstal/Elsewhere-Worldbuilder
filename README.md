@@ -1,6 +1,6 @@
 # Elsewhere
 
-A quiet, local-first worldbuilding studio for macOS. Elsewhere turns a setting into a spatial canvas: place spaces, elements and events on the page, draw the relations between them, record up to three moments in the world's time, and step back into a read-only Explore view when the world is ready to be read.
+A quiet, local-first worldbuilding studio for macOS and Windows. Elsewhere turns a setting into a spatial canvas: place spaces, elements and events on the page, draw the relations between them, record up to three moments in the world's time, and step back into a read-only Explore view when the world is ready to be read.
 
 Built with Tauri 2, React, TypeScript, and SQLite. No accounts, no cloud, no telemetry.
 
@@ -12,11 +12,21 @@ Built with Tauri 2, React, TypeScript, and SQLite. No accounts, no cloud, no tel
 
 ## Download
 
-Download the latest universal build for macOS 12 or newer (Apple Silicon and Intel) from [Releases](https://github.com/Phanstal/Elsewhere-Worldbuilder/releases/latest):
+Download the latest build from [Releases](https://github.com/Phanstal/Elsewhere-Worldbuilder/releases/latest).
+
+macOS 12 or newer (Apple Silicon and Intel):
 
 - `Elsewhere_0.1.5_universal.dmg`
 - `Elsewhere_0.1.5_universal.zip`
 - `SHA256SUMS.txt`
+
+Windows 10/11 (64-bit):
+
+- `Elsewhere_0.1.5_x64-setup.exe` (NSIS installer, recommended)
+- `Elsewhere_0.1.5_x64_en-US.msi`
+- `SHA256SUMS-windows.txt`
+
+### macOS first launch
 
 Verify the download before opening it:
 
@@ -24,9 +34,7 @@ Verify the download before opening it:
 shasum -a 256 -c Elsewhere_0.1.5_universal.dmg.sha256
 ```
 
-### First launch
-
-The app is **unsigned and not notarized** (personal distribution, no Apple Developer ID). macOS Gatekeeper will warn on first launch:
+The macOS build is **unsigned and not notarized** (personal distribution, no Apple Developer ID). Gatekeeper will warn on first launch:
 
 1. Open the DMG and drag `Elsewhere.app` to `/Applications`.
 2. Right-click the app, choose **Open**, then **Open** again. Or use **System Settings → Privacy & Security → Open Anyway**.
@@ -37,6 +45,16 @@ xattr -dr com.apple.quarantine /Applications/Elsewhere.app
 ```
 
 Because every build is ad-hoc signed rather than notarized, you may need to repeat this after installing a new release.
+
+### Windows first launch
+
+Run `Elsewhere_0.1.5_x64-setup.exe` and follow the installer. The MSI is available for managed deployment. The Windows build is **unsigned**, so SmartScreen may show **Windows protected your PC**; choose **More info → Run anyway**. The installer downloads the WebView2 bootstrapper when the runtime is missing.
+
+Verify the download in PowerShell:
+
+```powershell
+Get-FileHash .\Elsewhere_0.1.5_x64-setup.exe -Algorithm SHA256
+```
 
 ## What it does
 
@@ -52,10 +70,12 @@ Because every build is ad-hoc signed rather than notarized, you may need to repe
 - **Autosave**: changes land in a local SQLite database after a short debounce, with `Saving…` / `Saved` feedback. Undo and redo are available from the toolbar and `⌘Z` / `⇧⌘Z`.
 - **`.elsew` files**: a readable, versioned JSON format. Save the current world, or import a world as a new entry in the archive; imports never overwrite existing worlds. v0.1.0 files open with an `Origin` snapshot.
 - **PNG export**: render the whole world, including the dot grid, spaces, and relation lines, at 2× resolution through a native save dialog.
-- **Native macOS shell**: a transparent native title bar with the standard traffic lights and menus, drag-to-move from the system title bar, `⌘N` / `⌘S` / `⇧⌘E` / `⇧⌘P` / `⇧⌘O`, and window-state restore.
+- **Native shell**: on macOS, a transparent native title bar with the standard traffic lights, menus, `⌘N` / `⌘S` / `⇧⌘E` / `⇧⌘P` / `⇧⌘O`, and window-state restore; on Windows, a native window frame with the same application menu and `Ctrl` shortcuts.
 - **Example world**: [samples/the-hollow-reach.elsew](samples/the-hollow-reach.elsew) is the world in the screenshots. Import it from the archive to try the app.
 
 ## Keyboard and trackpad
+
+On Windows, use `Ctrl` wherever the table shows `⌘`.
 
 | Action                           | Shortcut               |
 | -------------------------------- | ---------------------- |
@@ -84,10 +104,11 @@ Each snapshot is stored inside the `.elsew` file and the SQLite record. The acti
 The SQLite database lives at:
 
 ```text
-~/Library/Application Support/com.phanstal.elsewhere/elsewhere.db
+macOS:   ~/Library/Application Support/com.phanstal.elsewhere/elsewhere.db
+Windows: %APPDATA%\com.phanstal.elsewhere\elsewhere.db
 ```
 
-Back it up with Time Machine or by copying that file while Elsewhere is closed. Removing the app does not remove the database; delete the folder above if you want a clean slate.
+Back it up by copying that file while Elsewhere is closed. Removing the app does not remove the database; delete the folder above if you want a clean slate.
 
 The browser build used for development and Playwright stores worlds in `localStorage` under `elsewhere.worlds.v1`. It is a full local adapter, not a demo mode.
 

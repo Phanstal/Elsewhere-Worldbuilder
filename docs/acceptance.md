@@ -2,15 +2,15 @@
 
 ## 0. 构建信息
 
-| 项目 | 值                                                                   |
-| ---- | -------------------------------------------------------------------- |
-| 版本 | v0.1.5                                                               |
-| 平台 | macOS 12+，universal（arm64 + x86_64）                               |
-| 产物 | `Elsewhere_0.1.5_universal.dmg`、`.zip`、`.sha256`、`SHA256SUMS.txt` |
-| 签名 | ad-hoc（未使用 Apple Developer ID，未公证）                          |
-| 仓库 | https://github.com/Phanstal/Elsewhere-Worldbuilder                   |
+| 项目 | 值                                                                                                                                                                                          |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 版本 | v0.1.5                                                                                                                                                                                      |
+| 平台 | macOS 12+，universal（arm64 + x86_64）；Windows 10/11 x64                                                                                                                                   |
+| 产物 | macOS：`Elsewhere_0.1.5_universal.dmg`、`.zip`、`.sha256`、`SHA256SUMS.txt`；Windows：`Elsewhere_0.1.5_x64-setup.exe`、`Elsewhere_0.1.5_x64_en-US.msi`、`.sha256`、`SHA256SUMS-windows.txt` |
+| 签名 | macOS ad-hoc（未使用 Apple Developer ID，未公证）；Windows 未签名                                                                                                                           |
+| 仓库 | https://github.com/Phanstal/Elsewhere-Worldbuilder                                                                                                                                          |
 
-自动化状态（2026-11-04）。按项目约定，本机不启动应用、不运行本地 Playwright；E2E 与 macOS 构建以 GitHub Actions 为准：
+自动化状态（2026-11-14）。按项目约定，本机不启动应用、不运行本地 Playwright；E2E 与 macOS / Windows 构建以 GitHub Actions 为准：
 
 - 本机 `npx eslint src/features/studio src/domain tests`：通过；`npx prettier --check` 对本次修改的受控文件通过（工作区中未跟踪的 Figma 副本会干扰全量扫描，CI 在干净检出上运行 `npm run lint` / `npm run format:check`）
 - 本机 `npm run typecheck`：通过
@@ -20,6 +20,9 @@
 - GitHub Actions macOS Release（tag `v0.1.5`，run [`41797132141`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/41797132141)）：universal `.app` 构建、ad-hoc 签名、双架构校验、DMG / ZIP / checksum 打包、Release 发布全部通过
 - 发布产物：DMG 10,573,142 bytes，SHA-256 `5e1d26db16d084f13f3a79bcfb54fb86b7bbd192716831e085bc2ea2b0be522b`；ZIP 9,559,201 bytes，SHA-256 `8d5aa63e51f0b6f8f66b116f50b6bd1495b889c0b05be52aed1b3888b40bf0ba`（与 `SHA256SUMS.txt` 及 GitHub asset digest 一致）
 - 已下载 ZIP 并校验 SHA-256 与 `SHA256SUMS.txt` 一致；解包确认 `Info.plist` 的 `CFBundleShortVersionString` / `CFBundleVersion` 为 `0.1.5`、`LSMinimumSystemVersion` 为 `12.0`，`icon.icns` 含 1024×1024 `ic10` PNG（与仓库源图标字节一致，四角透明、中心不透明），主二进制为 fat Mach-O，含 x86_64（`0x1000007`）与 arm64（`0x100000c`）
+- GitHub Actions Windows Release（tag `v0.1.5`，run [`43613052269`](https://github.com/Phanstal/Elsewhere-Worldbuilder/actions/runs/43613052269)）：Windows x64 NSIS `Elsewhere_0.1.5_x64-setup.exe` 与 MSI `Elsewhere_0.1.5_x64_en-US.msi` 构建、checksum、Release 资产上传全部通过
+- Windows 产物已下载：NSIS 3,226,878 bytes，SHA-256 `963acb013dd935ae037288f11e39df33fabfc7537010a2b1cd7e658e1b27f113`；MSI 4,644,864 bytes，SHA-256 `556de3c61834c5a10debf88809ce05645fe55add34de4f09df2ce0149a9086df`，与两个 `.sha256` 及 `SHA256SUMS-windows.txt` 一致
+- 解包检查：NSIS 内部 `elsewhere.exe` 与 MSI 内部主程序均为 PE `0x8664`（x64）、`FileVersion` / `ProductVersion` 为 `0.1.5`；MSI `Template=x64;0`、`ProductVersion=0.1.5`；两个安装器均未签名（`NotSigned`）
 
 > Playwright 验证的是浏览器 localStorage 适配器；SQLite、原生菜单、窗口和 DMG 仍需按下面的真机步骤验收。
 
@@ -185,21 +188,33 @@ macOS 应用最小宽度为 1040，以下用浏览器 `npm run dev` 或 Playwrig
 
 ## 14. 已知限制（v0.1.5 接受）
 
-- 无 Apple 签名 / 公证，首次启动需要手动放行；每次新版本可能重复。
-- 无自动更新、云同步、账号、协作、版本历史（仅会话内撤销 / 重做）。
+- 无 Apple 公证、Windows 代码签名，首次启动需要手动放行；无自动更新。
+- 无云同步、账号、协作、版本历史（仅会话内撤销 / 重做）。
 - 世界时间最多 3 个快照；没有快照合并、差异比较或独立分支。
 - 世界固定 1100×680；节点不能旋转；只有 Space（及旧 Place / Category）可缩放。
 - 关系是两节点间的命名连线，不支持路径点、多重边分组或跨世界引用。
 - 图片以内联 data URL 存在世界文件中；没有裁切、相框、媒体库或压缩。
 - 界面为英文；与原型一致。
 - 自动保存约 420 ms 防抖；返回、`⌘S`、正常关窗会 flush，强制结束进程可能丢失最后不到 420 ms。
-- 数据库未加密，依赖 macOS 账户权限保护。
+- 数据库未加密，依赖操作系统账户权限保护。
 
-## 15. 验收结论
+## 15. Windows x64（v0.1.5）
+
+- [x] 从 Releases 下载 `Elsewhere_0.1.5_x64-setup.exe`、`Elsewhere_0.1.5_x64_en-US.msi` 与 `SHA256SUMS-windows.txt`。
+- [x] PowerShell `Get-FileHash -Algorithm SHA256` 与两个 `.sha256` / `SHA256SUMS-windows.txt` 一致。
+- [x] 解包确认安装器内部主程序为 x64 PE（`0x8664`），版本 `0.1.5`；MSI `Template=x64;0`。
+- [ ] 在 Windows 10/11 真机运行 NSIS 安装器，首次启动按 SmartScreen 提示放行。
+- [ ] 在 Windows 10/11 真机重复关键流程：新建世界、创建节点、框选组移动、撤销、自动保存、`.elsew` 导入导出、PNG 导出、Explore、`Ctrl+C` / `Ctrl+V`。
+- [ ] Windows 真机确认窗口标题栏、应用菜单与 WebView2 渲染正常。
+
+> 本机未启动安装器或应用；Windows 安装与运行由真机验收覆盖。安装器未签名，首次运行会出现 SmartScreen 提示。
+
+## 16. 验收结论
 
 - [x] 自动化检查全部通过（GitHub Actions CI 绿色；17 个 Playwright E2E）
 - [x] macOS Release 工作流产出了 DMG、ZIP 与 checksum
 - [x] ZIP 已下载、SHA-256 匹配，`Info.plist`、双架构与 1024px 图标检查通过
+- [x] Windows Release 工作流产出了 x64 NSIS `.exe` 与 `.msi`，SHA-256 已校验，PE 架构与版本号检查通过
 - [ ] 真机安装、创建、编辑、别名、关系、时间快照、导入导出、PNG、Explore、菜单、窗口恢复全部通过
 - [ ] 验收人：__________ 日期：__________
 - [ ] 备注：
